@@ -18,7 +18,9 @@ export async function GET(req, { params }) {
       [id]
     );
 
-    console.log("Query result:", rows);
+    
+
+
 
     if (rows.length === 0) {
       console.warn(`No program found with ID: ${id}`);
@@ -28,7 +30,6 @@ export async function GET(req, { params }) {
       );
     }
 
-    console.log(`Program data found for ID: ${id}`, rows[0]);
     return new Response(JSON.stringify(rows[0]), {
       status: 200,
       headers: { "Content-Type": "application/json" },

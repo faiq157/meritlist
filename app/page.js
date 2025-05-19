@@ -9,16 +9,7 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-    <div className="max-w-4xl mx-auto py-8 px-4">
-    <Aggregate/>
-      <h1 className="text-2xl font-bold mb-4">Program Management</h1>
-
-{/* ProgramsList handles all CRUD operations */}
-
-
-{/* Button to open the dialog */}
-
-
+    <div className=" p-11">
       <ProgramsList />
     </div>
     </ProtectedRoute>

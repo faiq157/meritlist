@@ -1,104 +1,128 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation'; // Import useSearchParams
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '../programs/[id]/data-table';
-import { jsPDF } from 'jspdf';
-import { autoTable } from 'jspdf-autotable'; // Import autoTable
-
-const columns = [
-  { accessorKey: 'rank', header: 'Rank' },
-  { accessorKey: 'name', header: 'Name' },
-  { accessorKey: 'cnic', header: 'CNIC' },
-  { accessorKey: 'merit', header: 'Merit' },
-  { accessorKey: 'category', header: 'Category' },
-  { accessorKey: 'program_name', header: 'Program Name' },
-  { accessorKey: 'program_short_name', header: 'Program Short Name' },
-];
+import Loading from '../components/Loader';
+import { columns } from './columns';
+import { handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
+import { confirmSeat, deleteVersion, markAsNotAppeared, toggleLockSeat } from '../components/actions';
+import { useMeritList } from '../hooks/useMeritList';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreVertical } from 'lucide-react';
 
 export default function ShowMeritList() {
-  const [meritList, setMeritList] = useState([]);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
+  const programId = searchParams.get('programId');
+  const programShortName = searchParams.get('programShortName');
 
-  const fetchMeritList = async () => {
-    setLoading(true);
-    try {
-      const programId = searchParams.get('programId');
-      const programShortName = searchParams.get('programShortName');
+  const {
+    versions,
+    selectedVersion,
+    setSelectedVersion,
+    meritList,
+    setMeritList,
+    loading,
+  } = useMeritList(programId, programShortName); // ✅ use hook here
 
-      console.log('Fetching merit list for:', { programId, programShortName });
-
-      const queryParams = new URLSearchParams();
-      if (programId) queryParams.append('programId', programId);
-      if (programShortName) queryParams.append('programShortName', programShortName);
-
-      const response = await fetch(`/api/meritlist?${queryParams.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch merit list');
-      const data = await response.json();
-
-      const mappedData = data.map((item) => ({
-        ...item,
-        category: item.category === 'open_merit' ? 'Open Merit' : 'Self Finance',
-      }));
-
-      setMeritList(mappedData);
-    } catch (error) {
-      console.error('Error fetching merit list:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleConfirm = (cnic) => {
+    confirmSeat(cnic, programId, programShortName, setMeritList);
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-
-    doc.text('Merit List', 14, 10);
-
-    // Prepare table headers and rows
-    const tableHeaders = columns.map((col) => col.header);
-    const tableRows = meritList.map((item) => [
-      item.rank,
-      item.name,
-      item.cnic,
-      item.merit,
-      item.category,
-      item.program_name,
-      item.program_short_name,
-    ]);
-
-    // Use autoTable to generate the table
-    autoTable(doc, {
-      head: [tableHeaders],
-      body: tableRows,
-      startY: 20, // Start the table below the title
-    });
-
-    doc.save('merit_list.pdf');
+  const handleNotAppeared = (cnic) => {
+    markAsNotAppeared(cnic, programId, programShortName, setMeritList);
   };
 
-  useEffect(() => {
-    fetchMeritList();
-  }, [searchParams]);
+  const handleLockSeat = (cnic, lock) => {
+    toggleLockSeat(cnic, programId, lock, setMeritList);
+  };
+
+  const handleDelete = async () => {
+    await deleteVersion(programId, selectedVersion);
+    setSelectedVersion(null);
+    const updatedVersions = await fetchVersions(programId);
+    setMeritList([]);
+    setSelectedVersion(updatedVersions.at(-1) ?? null);
+  };
+console.log('meritList', meritList);
+  const totalConfirmed = meritList.filter((item) => item.confirmed).length;
+const totalNotAppeared = meritList.filter((item) => item.not_appeared).length;
+const totalLocked = meritList.filter((item) => item.lockseat ).length;
+const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
+
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-4">Merit List</h1>
+    <div className="p-6 space-y-4">
+      <div className='text-3xl'>Meritlist </div>
 
-      {/* 🟢 Download PDF Button */}
-      {meritList.length > 0 && (
-        <Button className="mb-4" onClick={handleDownloadPDF}>
-          Download as PDF
-        </Button>
-      )}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div className="p-4 bg-green-100 rounded-lg">
+    <p className="text-sm font-medium">Confirmed</p>
+    <p className="text-xl font-bold">{totalConfirmed}</p>
+  </div>
+  <div className="p-4 bg-red-100 rounded-lg">
+    <p className="text-sm font-medium">Not Appeared</p>
+    <p className="text-xl font-bold">{totalNotAppeared}</p>
+  </div>
+  <div className="p-4 bg-blue-100 rounded-lg">
+    <p className="text-sm font-medium">Locked</p>
+    <p className="text-xl font-bold">{totalLocked}</p>
+  </div>
+  <div className="p-4 bg-yellow-100 rounded-lg">
+    <p className="text-sm font-medium">Unlocked</p>
+    <p className="text-xl font-bold">{totalUnlocked}</p>
+  </div>
+</div>
 
+      <div className="flex items-center justify-between">
+        <Select
+          value={selectedVersion?.toString()}
+          onValueChange={(val) => setSelectedVersion(Number(val))}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select Version" />
+          </SelectTrigger>
+          <SelectContent>
+            {versions.map((version) => (
+              <SelectItem key={version} value={version.toString()}>
+                {ordinal(version)} Version
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2">
+        <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="outline" className="flex items-center gap-2">
+        <MoreVertical className="w-4 h-4" />
+        Actions
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuItem onClick={() => handleDownloadPDF(meritList, selectedVersion)}>
+        Download PDF
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleDownloadCSV(meritList, selectedVersion)}>
+        Download CSV
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={handleDelete}
+        className="text-red-600 focus:text-red-600"
+      >
+        Delete Version
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+        </div>
+      </div>
       {loading ? (
-        <div>Loading...</div>
-      ) : meritList.length > 0 ? (
-        <DataTable columns={columns} data={meritList} />
+        <Loading />
       ) : (
-        <div>No merit list found.</div>
+        <DataTable
+          columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName })}
+          data={meritList}
+        />
       )}
     </div>
   );
