@@ -8,9 +8,11 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileEdit, Plus, Trash2 } from "lucide-react";
+import { Book, BookOpen, CirclePlus, FileEdit, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Aggregate from "./Aggregate";
+import Loading from "./Loader";
 
 const ProgramsList = () => {
   const [programs, setPrograms] = useState([]);
@@ -100,52 +102,76 @@ const ProgramsList = () => {
 
   return (
     <div>
-      <Button onClick={() => setCreatingProgram(true)} className="mb-4">
-        <Plus/> Program
-      </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+      <h1 className=" font-bold text-3xl">Program Management</h1>
+      <p className="text-gray-500">View and manage academic programs</p>
+      </div>
+      <div className="flex items-center gap-4">
+      <Button onClick={() => setCreatingProgram(true)} >
+        <CirclePlus/> Program
+        </Button>
+       <Aggregate/> 
+        </div>
+       </div>
 
       {loading ? (
-        <p>Loading...</p>
+        <><Loading/></>
       ) : programs.length === 0 ? (
         <p>No programs found.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {programs.map((program) => (
-            <Card key={program.id}>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle>{program.name}</CardTitle>
-                <div className="flex space-x-2">
-                  <FileEdit
-                    className="cursor-pointer text-blue-500"
-                    onClick={() => setEditingProgram(program)}
-                  />
-                  <Trash2
-                    className="cursor-pointer text-red-500"
-                    onClick={() => deleteProgram(program.id)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{program.description}</p>
-                <p className="text-sm">
-                  <strong>Seats (Open):</strong> {program.seats_open}
-                </p>
-                <p className="text-sm">
-                  <strong>Seats (Self Finance):</strong> {program.seats_self_finance}
-                </p>
-                <p className="text-sm">
-                  <strong>Program Type:</strong> {program.programType}
-                </p>
-                <p className="text-sm">
-                  <strong>Short Name:</strong> {program.short_name}
-                </p>
-                <Link href={`/programs/${program.id}`}>
-                  <Button variant="outline" className="mt-2">
-                    View Details
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+       <Card key={program.id} className="border rounded-xl shadow-sm p-4 space-y-4">
+       <div className="flex justify-between items-start">
+         <div>
+           <h2 className="text-lg font-semibold flex items-center gap-2">
+             <span><BookOpen/></span> {program.name}
+           </h2>
+           <div className="flex gap-2 mt-2">
+             <span className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full font-medium">
+               {program.short_name}
+             </span>
+             <span className="bg-gray-200 text-gray-900 text-xs px-2 py-0.5 rounded-full font-medium">
+               {program.programType}
+             </span>
+           </div>
+         </div>
+         <div className="flex gap-2">
+           <FileEdit
+             className="cursor-pointer text-blue-500"
+             onClick={() => setEditingProgram(program)}
+           />
+           <Trash2
+             className="cursor-pointer text-red-500"
+             onClick={() => deleteProgram(program.id)}
+           />
+         </div>
+       </div>
+     
+       <p className="text-sm text-muted-foreground">
+         {program.description}
+       </p>
+     
+       <div className="space-y-1 text-sm">
+         <p>
+           <strong>Seats (Open):</strong> {program.seats_open}
+         </p>
+         <p>
+           <strong>Seats (Self Finance):</strong> {program.seats_self_finance}
+         </p>
+       </div>
+     
+       <Link href={`/programs/${program.id}`}>
+         <Button
+           variant="outline"
+           className="mt-2 w-full hover:text-white cursor-pointer"
+         >
+           View Details
+         </Button>
+       </Link>
+     </Card>
+     
           ))}
         </div>
       )}

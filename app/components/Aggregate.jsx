@@ -69,7 +69,7 @@ const Aggregate = () => {
   return (
     <div>
       <div className="flex justify-end items-center">
-        <Button onClick={() => setIsDialogOpen(true)} className="mt-4">
+        <Button onClick={() => setIsDialogOpen(true)} >
           Update Aggregate
         </Button>
       </div>
