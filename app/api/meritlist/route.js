@@ -21,19 +21,25 @@ export async function POST(req) {
     const newVersion = currentVersion + 1;
 
     // Insert the new merit list
-    const values = meritList.map((student, index) => [
-      programId,
-      programName,
-      programShortName,
-      student.name,
-      student.cnic,
-      student.merit,
-      index + 1, // rank
-      student.category,
-      newVersion,
-      0 // Default availed status to 0 (not availed)
-    ]);
-
+    const values = meritList.map((student, index) => {
+      console.log("Student:", student); // 👈 This logs each student object
+      return [
+        programId,
+        programName,
+        programShortName,
+        student.name,
+        student.cnic,
+        student.merit,
+        index + 1, // rank
+        student.form_no,
+        student.category,
+        newVersion,
+        0 // Default availed status to 0 (not availed)
+      ];
+    });
+    
+    console.log("Inserting values:", values);
+    
     if (values.length > 0) {
       await connection.query(
         `INSERT INTO merit_list (
@@ -44,6 +50,7 @@ export async function POST(req) {
           cnic,
           merit,
           rank,
+          form_no,
           category,
           version,
           availed
@@ -94,6 +101,7 @@ export async function GET(req) {
           ml.name,
           ml.availed,
           ml.version,
+          ml.form_no,
           ml.category,
           sa.selected_for_meritlist,
           sa.selected_program_shortname
@@ -195,72 +203,3 @@ export async function DELETE(req) {
 
 
   
-
-// this is for multiple merit list route
-
-// export async function POST(req) {
-//   const connection = await getConnection();
-//   try {
-//     const body = await req.json();
-//     const { programId, programName, programShortName, meritList } = body;
-
-//     if (!programId || !Array.isArray(meritList)) {
-//       return new Response(
-//         JSON.stringify({ message: "Invalid data provided" }),
-//         { status: 400, headers: { "Content-Type": "application/json" } }
-//       );
-//     }
-
-//     console.log("Storing merit list for program ID:", programId);
-
-//     // Get the latest version for the program
-//     const [rows] = await connection.execute(
-//       "SELECT MAX(version) AS maxVersion FROM merit_list WHERE program_id = ?",
-//       [programId]
-//     );
-//     const currentVersion = rows[0]?.maxVersion || 0;
-//     const newVersion = currentVersion + 1;
-
-//     // Fetch students who have already availed seats
-//     const [availedStudents] = await connection.execute(
-//       "SELECT cnic FROM merit_list WHERE program_id = ? AND availed = 1",
-//       [programId]
-//     );
-//     const availedCnicSet = new Set(availedStudents.map((student) => student.cnic));
-
-//     // Filter out students who have already availed seats
-//     const filteredMeritList = meritList.filter(
-//       (student) => !availedCnicSet.has(student.cnic)
-//     );
-
-//     // Insert the new merit list
-//     const values = filteredMeritList.map((student, index) => [
-//       programId,
-//       programName,
-//       programShortName,
-//       student.name,
-//       student.cnic,
-//       student.merit,
-//       index + 1,
-//       student.category,
-//       newVersion, // Add the version
-//       0, // Default availed status to 0 (not availed)
-//     ]);
-
-//     await connection.query(
-//       "INSERT INTO merit_list (program_id, program_name, program_short_name, name, cnic, merit, rank, category, version, availed) VALUES ?",
-//       [values]
-//     );
-
-//     return new Response(
-//       JSON.stringify({ message: "Merit list stored successfully", version: newVersion }),
-//       { status: 200, headers: { "Content-Type": "application/json" } }
-//     );
-//   } catch (error) {
-//     console.error("Error storing merit list:", error);
-//     return new Response(
-//       JSON.stringify({ message: "Error storing merit list", error: error.message }),
-//       { status: 500, headers: { "Content-Type": "application/json" } }
-//     );
-//   }
-// }

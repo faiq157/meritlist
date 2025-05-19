@@ -108,6 +108,7 @@ const ProgramActions = ({ program }) => {
             name: student.name,
             cnic: student.cnic,
             merit,
+            form_no: student.form_no,
           };
         });
   
