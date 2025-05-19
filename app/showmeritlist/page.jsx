@@ -11,12 +11,15 @@ import { confirmSeat, deleteVersion, fetchVersions, markAsNotAppeared, toggleLoc
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
-import { Suspense } from 'react';
+import { Suspense, useMemo, useState } from 'react';
+import { Input } from '@/components/ui/input';
 
 export default function ShowMeritList() {
   const searchParams = useSearchParams();
   const programId = searchParams.get('programId');
   const programShortName = searchParams.get('programShortName');
+
+  const [searchTerm, setSearchTerm] = useState('');
 
   const {
     versions,
@@ -51,7 +54,19 @@ export default function ShowMeritList() {
 const totalNotAppeared = meritList.filter((item) => item.not_appeared).length;
 const totalLocked = meritList.filter((item) => item.lockseat ).length;
 const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
+const filteredMeritList = useMemo(() => {
+  if (!searchTerm.trim()) return meritList;
 
+  const lower = searchTerm.toLowerCase();
+
+  return meritList.filter((item) => {
+    return (
+      item.name?.toLowerCase().includes(lower) ||
+      item.cnic?.toLowerCase().includes(lower) ||
+      item.form_no?.toLowerCase().includes(lower)
+    );
+  });
+}, [meritList, searchTerm]);
 
   return (
     <Suspense fallback={<Loading />}>
@@ -94,6 +109,13 @@ const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
           </SelectContent>
         </Select>
         <div className="flex gap-2">
+        <Input
+            type="text"
+            placeholder="Search by Name, CNIC, or Form No"
+            className="border px-4 py-2 rounded-md w-64"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="outline" className="flex items-center gap-2">
@@ -123,7 +145,7 @@ const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
       ) : (
         <DataTable
           columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName })}
-          data={meritList}
+          data={filteredMeritList}
         />
       )}
     </div>
