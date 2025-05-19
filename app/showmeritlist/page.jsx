@@ -11,6 +11,7 @@ import { confirmSeat, deleteVersion, markAsNotAppeared, toggleLockSeat } from '.
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
+import { Suspense } from 'react';
 
 export default function ShowMeritList() {
   const searchParams = useSearchParams();
@@ -45,7 +46,7 @@ export default function ShowMeritList() {
     setMeritList([]);
     setSelectedVersion(updatedVersions.at(-1) ?? null);
   };
-console.log('meritList', meritList);
+
   const totalConfirmed = meritList.filter((item) => item.confirmed).length;
 const totalNotAppeared = meritList.filter((item) => item.not_appeared).length;
 const totalLocked = meritList.filter((item) => item.lockseat ).length;
@@ -53,6 +54,7 @@ const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
 
 
   return (
+    <Suspense fallback={<Loading />}>
     <div className="p-6 space-y-4">
       <div className='text-3xl'>Meritlist </div>
 
@@ -125,5 +127,6 @@ const totalUnlocked = meritList.filter((item) => !item.lockseat).length;
         />
       )}
     </div>
+    </Suspense>
   );
 }
