@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 
 export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName }) => [
   { accessorKey: 'rank', header: 'Rank' },
+  { accessorKey: 'form_no', header: 'Form No' },
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'cnic', header: 'CNIC' },
   { accessorKey: 'merit', header: 'Merit' },
