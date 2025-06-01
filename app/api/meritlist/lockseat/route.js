@@ -1,4 +1,3 @@
-// File: /app/api/meritlist/lockseat/route.js
 import { getConnection } from "@/lib/mysql";
 
 export async function POST(req) {

@@ -52,6 +52,7 @@ const ProgramsList = () => {
       const createdProgram = await response.json();
       setPrograms((prev) => [...prev, createdProgram]); // Add the new program to the list
       setCreatingProgram(false); // Close the dialog
+       await fetchPrograms();
       return true;
     } catch (error) {
       console.error("Error creating program:", error);
@@ -84,21 +85,28 @@ const ProgramsList = () => {
   };
 
   // Delete a program
-  const deleteProgram = async (id) => {
-    if (!confirm("Are you sure you want to delete this program?")) return;
+const deleteProgram = async (id) => {
+  if (!confirm("Are you sure you want to delete this program?")) return;
 
-    try {
-      const response = await fetch(`/api/programs?id=${id}`, {
-        method: "DELETE",
-      });
+  try {
+    const response = await fetch(`/api/programs?id=${id}`, {
+      method: "DELETE",
+    });
 
-      if (!response.ok) throw new Error("Failed to delete program");
+    const data = await response.json();
 
-      setPrograms((prev) => prev.filter((program) => program.id !== id));
-    } catch (error) {
-      console.error("Error deleting program:", error);
+    if (!response.ok) {
+      // Show the backend error message to the user
+      alert(data.message || "Failed to delete program");
+      return;
     }
-  };
+
+    setPrograms((prev) => prev.filter((program) => program.id !== id));
+  } catch (error) {
+    console.error("Error deleting program:", error);
+    alert("An unexpected error occurred while deleting the program.");
+  }
+};
 
   return (
     <div>
@@ -152,16 +160,6 @@ const ProgramsList = () => {
        <p className="text-sm text-muted-foreground">
          {program.description}
        </p>
-     
-       <div className="space-y-1 text-sm">
-         <p>
-           <strong>Seats (Open):</strong> {program.seats_open}
-         </p>
-         <p>
-           <strong>Seats (Self Finance):</strong> {program.seats_self_finance}
-         </p>
-       </div>
-     
        <Link href={`/programs/${program.id}`}>
          <Button
            variant="outline"

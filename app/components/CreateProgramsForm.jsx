@@ -21,10 +21,6 @@ const CreateProgramsForm = ({
 }) => {
   const [name, setName] = useState(initialValues.name || "");
   const [description, setDescription] = useState(initialValues.description || "");
-  const [seatsOpen, setSeatsOpen] = useState(initialValues.seats_open || 20);
-  const [seatsSelfFinance, setSeatsSelfFinance] = useState(
-    initialValues.seats_self_finance || 10
-  );
   const [programType, setProgramType] = useState(
     initialValues.programType || "Engineering"
   );
@@ -36,8 +32,6 @@ const CreateProgramsForm = ({
     const success = await onSubmit({
       name,
       description,
-      seats_open: seatsOpen,
-      seats_self_finance: seatsSelfFinance,
       programType,
       short_name: shortName, // Include short_name in submission
     });
@@ -88,31 +82,6 @@ const CreateProgramsForm = ({
             required
           />
         </div>
-
-        <div>
-          <Label htmlFor="seatsOpen">Seats (Open)</Label>
-          <Input
-            id="seatsOpen"
-            type="number"
-            min="0"
-            value={seatsOpen}
-            onChange={(e) => setSeatsOpen(Number(e.target.value))}
-            required
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="seatsSelfFinance">Seats (Self Finance)</Label>
-          <Input
-            id="seatsSelfFinance"
-            type="number"
-            min="0"
-            value={seatsSelfFinance}
-            onChange={(e) => setSeatsSelfFinance(Number(e.target.value))}
-            required
-          />
-        </div>
-
         <div>
           <Label htmlFor="programType">Program Type</Label>
           <Select

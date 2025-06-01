@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { getSeatTypeFromShortName } from '../utils/utils';
 
 export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName }) => [
   { accessorKey: 'rank', header: 'Rank' },
@@ -6,7 +7,11 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'cnic', header: 'CNIC' },
   { accessorKey: 'merit', header: 'Merit' },
-  { accessorKey: 'category', header: 'Category' },
+  {
+    accessorFn: row => getSeatTypeFromShortName(row.program_short_name),
+    id: 'seat_type',
+    header: 'Seat Type',
+  },
   { accessorKey: 'program_name', header: 'Program Name' },
   { accessorKey: 'program_short_name', header: 'Program Short Name' },
   {
@@ -18,17 +23,17 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
           onClick={() => handleConfirm(row.original.cnic)}
           disabled={row.original.confirmed || row.original.not_appeared}
         >
-          {row.original.confirmed ? 'Confirmed' : 'Confirm'}
+          {row.original.confirmed ? 'Admited' : 'admit'}
         </Button>
         <Button
           onClick={() => handleNotAppeared(row.original.cnic)}
           disabled={row.original.confirmed || row.original.not_appeared}
         >
-        {row.original.not_appeared ? 'Not Appeared' : 'Not Appeared'}
+          {row.original.not_appeared ? 'Not Appeared' : 'Not Appeare'}
         </Button>
         <Button
           onClick={() => handleLockSeat(row.original.cnic, row.original.lockseat)}
-            disabled={row.original.confirmed || row.original.not_appeared}
+          disabled={row.original.confirmed || row.original.not_appeared}
         >
           {row.original.lockseat ? 'Lock' : 'Unlock'}
         </Button>

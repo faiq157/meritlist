@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '../programs/[id]/data-table';
 import Loading from '../components/Loader';
 import { columns } from './columns';
-import { handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
+import { handleDownloadAllVersionsPDF, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
 import { confirmSeat, deleteVersion, fetchVersions, markAsNotAppeared, toggleLockSeat } from '../components/actions';
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -124,6 +124,9 @@ const filteredMeritList = useMemo(() => {
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
+      <DropdownMenuItem   onClick={() => handleDownloadAllVersionsPDF(programId)}>
+        Download All PDF 
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={() => handleDownloadPDF(meritList, selectedVersion)}>
         Download PDF
       </DropdownMenuItem>

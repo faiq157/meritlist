@@ -26,7 +26,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, description, seats_open, seats_self_finance, programType, short_name } = body;
+    const { name, description, programType, short_name } = body;
 
     // Validate input
     if (!name || typeof name !== "string") {
@@ -43,13 +43,13 @@ export async function POST(req) {
       );
     }
 
-    console.log("Creating new program:", { name, description, seats_open, seats_self_finance, programType, short_name });
+    console.log("Creating new program:", { name, description, programType, short_name });
     const connection = await getConnection();
 
     const [result] = await connection.execute(
-      `INSERT INTO programs (name, description, seats_open, seats_self_finance, programType, short_name) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, description || null, seats_open || 0, seats_self_finance || 0, programType || "General", short_name]
+      `INSERT INTO programs (name, description, programType, short_name) 
+       VALUES (?, ?, ?, ?)`,
+      [name, description || null, programType || "General", short_name]
     );
 
     console.log("Program created successfully with ID:", result.insertId);
@@ -71,7 +71,7 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     const body = await req.json();
-    const { id, name, description, seats_open, seats_self_finance, programType, short_name } = body;
+    const { id, name, description, programType, short_name } = body;
 
     // Validate input
     if (!id || typeof id !== "number") {
@@ -95,19 +95,17 @@ export async function PUT(req) {
       );
     }
 
-    console.log("Updating program:", { id, name, description, seats_open, seats_self_finance, programType, short_name });
+    console.log("Updating program:", { id, name, description, programType, short_name });
     const connection = await getConnection();
 
     const [result] = await connection.execute(
       `UPDATE programs 
        SET name = ?, 
            description = ?, 
-           seats_open = ?, 
-           seats_self_finance = ?, 
            programType = ?, 
            short_name = ? 
        WHERE id = ?`,
-      [name, description || null, seats_open || 0, seats_self_finance || 0, programType || "General", short_name, id]
+      [name, description || null, programType || "General", short_name, id]
     );
 
     if (result.affectedRows === 0) {
@@ -166,6 +164,15 @@ export async function DELETE(req) {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // Check for foreign key constraint error
+    if (error.code === "ER_ROW_IS_REFERENCED_2" || error.errno === 1451) {
+      return new Response(
+        JSON.stringify({
+          message: "Cannot delete this program because it has related merit list entries. Please delete all related merit lists first.",
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
     console.error("Error deleting program:", error);
     return new Response(
       JSON.stringify({ message: "Error deleting program", error: error.message }),
