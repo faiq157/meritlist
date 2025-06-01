@@ -1,6 +1,13 @@
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
-
+export const getSeatTypeFromShortName = (shortName) => {
+  if (!shortName || typeof shortName !== "string") return "";
+  const lastChar = shortName.trim().slice(-1).toUpperCase();
+  if (lastChar === "O") return "Open Merit";
+  if (lastChar === "R") return "Rational";
+  if (lastChar === "S") return "Self Finance";
+  return "";
+};
 export const handleDownloadPDF = (meritList, version) => {
   const doc = new jsPDF();
   doc.text(`Merit List - ${version}`, 14, 10);
@@ -11,7 +18,7 @@ export const handleDownloadPDF = (meritList, version) => {
     item.name,
     item.cnic,
     item.merit,
-    item.category,
+   getSeatTypeFromShortName(item.program_short_name),
     item.program_name,
     item.program_short_name,
     item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
@@ -34,7 +41,7 @@ export const handleDownloadCSV = (meritList, version) => {
     item.name,
     item.cnic,
     item.merit,
-    item.category,
+    getSeatTypeFromShortName(item.program_short_name),
     item.program_name,
     item.program_short_name,
     item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
@@ -55,4 +62,42 @@ export const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+export const handleDownloadAllVersionsPDF = async (programId) => {
+  const res = await fetch(`/api/meritlist/all?programId=${programId}`);
+  if (!res.ok) {
+    alert('Failed to fetch all merit lists.');
+    return;
+  }
+  const allVersions = await res.json();
+
+  const doc = new jsPDF();
+  let first = true;
+
+  for (const { version, meritList } of allVersions) {
+    if (!first) doc.addPage();
+    first = false;
+   doc.text(`Merit List`, 14, 10);
+
+    const headers = ["Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
+    const rows = meritList.map((item) => [
+      item.rank,
+      item.name,
+      item.cnic,
+      item.merit,
+     getSeatTypeFromShortName(item.program_short_name),
+      item.program_name,
+      item.program_short_name,
+      item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
+      item.lockseat ? "Locked" : "Unlocked",
+    ]);
+
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 20,
+    });
+  }
+
+  doc.save(`all_versions_merit_list_${programId}.pdf`);
 };
