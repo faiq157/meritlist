@@ -50,7 +50,7 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
         </Button>
         <Button
           onClick={() => handleLockSeat(row.original.cnic, row.original.lockseat)}
-          disabled={row.original.confirmed || row.original.not_appeared || row.original.alreadyAdmitted}
+          disabled={ row.original.not_appeared || row.original.alreadyAdmitted}
         >
           {row.original.lockseat ? 'Lock' : 'Unlock'}
         </Button>
