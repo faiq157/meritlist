@@ -141,3 +141,27 @@ export const handleDownloadAllVersionsCSV = async (programId) => {
   a.click();
   URL.revokeObjectURL(url);
 };
+
+export const handleDownloadCancelledMeritListCSV = async (programId) => {
+  const res = await fetch(`/api/meritlist/cancel?programId=${programId}`);
+  if (!res.ok) {
+    alert('Failed to fetch cancelled merit list.');
+    return;
+  }
+  const data = await res.json();
+  const headers = ["CNIC", "Program ID", "Program Short Name", "Cancelled At"];
+  const rows = data.map(item => [
+    item.cnic,
+    item.program_id,
+    item.program_short_name,
+    item.cancelled_at,
+  ]);
+  const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `cancelled_merit_list_${programId}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
