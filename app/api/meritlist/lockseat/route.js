@@ -35,8 +35,8 @@ export async function POST(req) {
         );
         if (exists.length === 0) {
           await connection.execute(
-            `INSERT INTO confirmed_seats (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
-            [cnic, programId, programShortName]
+            `INSERT INTO confirmed_seats (cnic, program_id) VALUES (?, ?)`,
+            [cnic, programId]
           );
         }
       }
