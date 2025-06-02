@@ -27,42 +27,35 @@ export async function POST(req) {
       );
     }
 
-    // Step 1: Confirm the seat in the selected program (set admitted = 1 as well)
+    // Only set confirmed = 1
     await connection.execute(
       `UPDATE merit_list 
-       SET confirmed = 1, lockseat = 1
+       SET confirmed = 1
        WHERE cnic = ? AND program_id = ?`,
       [cnic, programId]
     );
 
-    // Step 2: Insert into confirmed_seats if lockseat and admitted are true
+    // Check if lockseat is true after confirming
     const [rows] = await connection.execute(
-      `SELECT * FROM merit_list WHERE cnic = ? AND program_id = ? AND lockseat = 1 AND confirmed = 1`,
+      `SELECT lockseat FROM merit_list WHERE cnic = ? AND program_id = ?`,
       [cnic, programId]
     );
-    if (rows.length > 0) {
-      await connection.execute(
-        `INSERT INTO confirmed_seats (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
-        [cnic, programId, programShortName]
+    if (rows.length > 0 && rows[0].lockseat === 1) {
+      // Check if already in confirmed_seats to avoid duplicates
+      const [exists] = await connection.execute(
+        `SELECT * FROM confirmed_seats WHERE cnic = ? AND program_id = ?`,
+        [cnic, programId]
       );
+      if (exists.length === 0) {
+        await connection.execute(
+          `INSERT INTO confirmed_seats (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
+          [cnic, programId, programShortName]
+        );
+      }
     }
 
-    // Step 3: Remove the same student from all other programs
-    await connection.execute(
-      `DELETE FROM merit_list 
-       WHERE cnic = ? AND program_id != ? AND confirmed = 1 AND lockseat = 1`,
-      [cnic, programId]
-    );
-
-    // Step 4: Remove the student from all other merit lists
-    await connection.execute(
-      `DELETE FROM merit_list 
-       WHERE cnic = ? AND program_id != ?`,
-      [cnic, programId]
-    );
-
     return new Response(
-      JSON.stringify({ message: "Seat confirmed and added to confirmed_seats." }),
+      JSON.stringify({ message: "Seat confirmed." }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
