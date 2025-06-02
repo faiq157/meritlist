@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '../programs/[id]/data-table';
 import Loading from '../components/Loader';
 import { columns } from './columns';
-import { handleDownloadAllVersionsPDF, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
+import { handleDownloadAllVersionsCSV, handleDownloadAllVersionsPDF, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
 import { confirmSeat, deleteVersion, fetchVersions, markAsNotAppeared, toggleLockSeat } from '../components/actions';
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 
 export default function ShowMeritList() {
@@ -49,7 +49,16 @@ export default function ShowMeritList() {
     setMeritList([]);
     setSelectedVersion(updatedVersions.at(-1) ?? null);
   };
-
+const handleDeleteConfirmedSeats = async () => {
+  if (!programId) return;
+  if (!window.confirm("Are you sure you want to delete all confirmed seats for this program?")) return;
+  const res = await fetch(`/api/meritlist/confirmed_seats?programId=${programId}`, {
+    method: "DELETE",
+  });
+  const data = await res.json();
+  alert(data.message || "Confirmed seats deleted.");
+  // Optionally, refresh the merit list or page here
+};
   const totalConfirmed = meritList.filter((item) => item.confirmed).length;
 const totalNotAppeared = meritList.filter((item) => item.not_appeared).length;
 const totalLocked = meritList.filter((item) => item.lockseat ).length;
@@ -67,6 +76,41 @@ const filteredMeritList = useMemo(() => {
     );
   });
 }, [meritList, searchTerm]);
+
+
+ useEffect(() => {
+  if (!meritList.length) return;
+  const checkConfirmed = async () => {
+    const cnics = meritList.map(item => item.cnic);
+    const res = await fetch("/api/meritlist/confirmed_seats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cnics }),
+    });
+    const confirmedSeats = await res.json(); // [{cnic, program_id, program_short_name}, ...]
+    // Map CNIC to program info for quick lookup
+    const confirmedMap = new Map();
+    confirmedSeats.forEach(cs => {
+      confirmedMap.set(cs.cnic, {
+        program_id: cs.program_id,
+        program_short_name: cs.program_short_name,
+      });
+    });
+    setMeritList(meritList =>
+      meritList.map(item => {
+        const admitted = confirmedMap.get(item.cnic);
+        return {
+          ...item,
+          alreadyAdmitted: !!admitted,
+          alreadyAdmittedShortName: admitted ? admitted.program_short_name : null,
+          alreadyAdmittedProgramId: admitted ? admitted.program_id : null,
+        };
+      })
+    );
+  };
+  checkConfirmed();
+  // eslint-disable-next-line
+}, [meritList.length]);
 
   return (
     <Suspense fallback={<Loading />}>
@@ -134,11 +178,25 @@ const filteredMeritList = useMemo(() => {
         Download CSV
       </DropdownMenuItem>
       <DropdownMenuItem
+        onClick={() => {
+         
+            handleDownloadAllVersionsCSV(programId);
+        }}
+      >
+        Download All CSV
+      </DropdownMenuItem>
+      <DropdownMenuItem
         onClick={handleDelete}
         className="text-red-600 focus:text-red-600"
       >
         Delete Version
       </DropdownMenuItem>
+      <DropdownMenuItem
+  onClick={handleDeleteConfirmedSeats}
+  className="text-red-600 focus:text-red-600"
+>
+  Delete Confirmed Seats
+</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
         </div>

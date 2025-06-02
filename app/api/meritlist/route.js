@@ -189,7 +189,7 @@ export async function DELETE(req) {
     );
 
     return new Response(
-      JSON.stringify({ message: 'Merit list deleted successfully' }),
+      JSON.stringify({ message: 'Merit list and confirmed seats deleted successfully' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -200,6 +200,5 @@ export async function DELETE(req) {
     );
   }
 }
-
 
   
