@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '../programs/[id]/data-table';
 import Loading from '../components/Loader';
 import { columns } from './columns';
-import { handleDownloadAllVersionsCSV, handleDownloadAllVersionsPDF, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
+import { handleDownloadAllVersionsCSV, handleDownloadAllVersionsPDF, handleDownloadCancelledMeritListCSV, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
 import { confirmSeat, deleteVersion, fetchVersions, markAsNotAppeared, toggleLockSeat } from '../components/actions';
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -28,6 +28,7 @@ export default function ShowMeritList() {
     meritList,
     setMeritList,
     loading,
+    fetchMeritList,
   } = useMeritList(programId, programShortName); 
 
   const handleConfirm = (cnic) => {
@@ -58,6 +59,7 @@ const handleDeleteConfirmedSeats = async () => {
   const data = await res.json();
   alert(data.message || "Confirmed seats deleted.");
   // Optionally, refresh the merit list or page here
+  fetchMeritList();
 };
   const totalConfirmed = meritList.filter((item) => item.confirmed).length;
 const totalNotAppeared = meritList.filter((item) => item.not_appeared).length;
@@ -77,7 +79,18 @@ const filteredMeritList = useMemo(() => {
   });
 }, [meritList, searchTerm]);
 
-
+const handleCancelAdmission = async (cnic, program_id, program_short_name) => {
+  if (!window.confirm("Are you sure you want to cancel this admission?")) return;
+  const res = await fetch("/api/meritlist/cancel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cnic, program_id, program_short_name }),
+  });
+  const data = await res.json();
+  alert(data.message);
+  // Refresh your merit list here
+  fetchMeritList();
+};
  useEffect(() => {
   if (!meritList.length) return;
   const checkConfirmed = async () => {
@@ -111,26 +124,39 @@ const filteredMeritList = useMemo(() => {
   checkConfirmed();
   // eslint-disable-next-line
 }, [meritList.length]);
+// Download PDF for a specific category
+const handleDownloadCategoryPDF = (category) => {
+  let filtered = [];
+  if (category === "Confirmed") filtered = meritList.filter(item => item.confirmed);
+  if (category === "Not Appeared") filtered = meritList.filter(item => item.not_appeared);
+  if (category === "Locked") filtered = meritList.filter(item => item.lockseat);
+  if (category === "Unlocked") filtered = meritList.filter(item => !item.lockseat);
 
+  if (filtered.length === 0) {
+    alert(`No records found for ${category}`);
+    return;
+  }
+  handleDownloadPDF(filtered, `${category}_${selectedVersion}`);
+};
   return (
     <Suspense fallback={<Loading />}>
     <div className="p-6 space-y-4">
       <div className='text-3xl'>Meritlist </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-  <div className="p-4 bg-green-100 rounded-lg">
+      <div className="grid grid-cols-2 cursor-pointer md:grid-cols-4 gap-4">
+  <div onClick={() => handleDownloadCategoryPDF("Confirmed")} className="p-4  bg-green-100 rounded-lg">
     <p className="text-sm font-medium">Confirmed</p>
     <p className="text-xl font-bold">{totalConfirmed}</p>
   </div>
-  <div className="p-4 bg-red-100 rounded-lg">
+  <div onClick={() => handleDownloadCategoryPDF("Not Appeared")} className="p-4 bg-red-100 rounded-lg">
     <p className="text-sm font-medium">Not Appeared</p>
     <p className="text-xl font-bold">{totalNotAppeared}</p>
   </div>
-  <div className="p-4 bg-blue-100 rounded-lg">
+  <div onClick={() => handleDownloadCategoryPDF("Locked")} className="p-4 bg-blue-100 rounded-lg">
     <p className="text-sm font-medium">Locked</p>
     <p className="text-xl font-bold">{totalLocked}</p>
   </div>
-  <div className="p-4 bg-yellow-100 rounded-lg">
+  <div  onClick={() => handleDownloadCategoryPDF("Unlocked")} className="p-4 bg-yellow-100 rounded-lg">
     <p className="text-sm font-medium">Unlocked</p>
     <p className="text-xl font-bold">{totalUnlocked}</p>
   </div>
@@ -197,6 +223,11 @@ const filteredMeritList = useMemo(() => {
 >
   Delete Confirmed Seats
 </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => handleDownloadCancelledMeritListCSV(programId)}
+      >
+        Download Cannceled Merit List
+      </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
         </div>
@@ -205,7 +236,7 @@ const filteredMeritList = useMemo(() => {
         <Loading />
       ) : (
         <DataTable
-          columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName })}
+          columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName,handleCancelAdmission })}
           data={filteredMeritList}
         />
       )}
