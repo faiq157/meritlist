@@ -5,12 +5,11 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { cnic, programId, programShortName } = body;
+    const { cnic, programId } = body;
 
-    // Validate required data
-    if (!cnic || !programId || !programShortName) {
+    if (!cnic || !programId) {
       return new Response(
-        JSON.stringify({ message: "CNIC, Program ID, and Program Short Name are required" }),
+        JSON.stringify({ message: "CNIC and Program ID are required" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -27,20 +26,19 @@ export async function POST(req) {
       );
     }
 
-    // Only set confirmed = 1
+    // Set confirmed = 1
     await connection.execute(
-      `UPDATE merit_list 
-       SET confirmed = 1
-       WHERE cnic = ? AND program_id = ?`,
+      `UPDATE merit_list SET confirmed = 1 WHERE cnic = ? AND program_id = ?`,
       [cnic, programId]
     );
 
-    // Check if lockseat is true after confirming
+    // Check if both confirmed and lockseat are true
     const [rows] = await connection.execute(
-      `SELECT lockseat FROM merit_list WHERE cnic = ? AND program_id = ?`,
+      `SELECT program_short_name FROM merit_list WHERE cnic = ? AND program_id = ? AND confirmed = 1 AND lockseat = 1`,
       [cnic, programId]
     );
-    if (rows.length > 0 && rows[0].lockseat === 1) {
+    if (rows.length > 0) {
+      const programShortName = rows[0].program_short_name;
       // Check if already in confirmed_seats to avoid duplicates
       const [exists] = await connection.execute(
         `SELECT * FROM confirmed_seats WHERE cnic = ? AND program_id = ?`,

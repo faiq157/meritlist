@@ -49,14 +49,15 @@ export async function POST(req) {
           name,
           cnic,
           merit,
-          rank,
+          \`rank\`,       
           form_no,
           category,
           version,
           availed
         ) VALUES ?`,
         [values]
-      );
+);
+
     }
 
     return new Response(
@@ -92,11 +93,11 @@ export async function GET(req) {
 
     if (cnic) {
       // Fetch all entries by CNIC
-      query = `
+    query = `
         SELECT 
           ml.program_name,
           ml.program_short_name,
-          ml.rank,
+          \`ml\`.\`rank\`,
           ml.merit,
           ml.name,
           ml.availed,
@@ -110,6 +111,7 @@ export async function GET(req) {
         WHERE ml.cnic = ?
         ORDER BY ml.version ASC
       `;
+
       params.push(cnic);
     } else {
       // Fetch by programId or programShortName
