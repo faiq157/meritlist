@@ -11,19 +11,20 @@ import {
 } from "@/components/ui/card";
 import { User, Landmark, Hash, Star, BadgeCheck } from "lucide-react";
 export default function StudentMeritList() {
-  const [cnic, setCnic] = useState('');
+  const [searchValue, setSearchValue] = useState('');
   const [meritLists, setMeritLists] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchMeritLists = async () => {
-    if (!cnic) {
-      alert('Please enter a valid CNIC number.');
+    if (!searchValue) {
+      alert('Please enter CNIC or Form No.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/meritlist?cnic=${cnic}`);
+      // Send as both cnic and form_no
+      const response = await fetch(`/api/meritlist?cnic=${searchValue}&form_no=${searchValue}`);
       if (!response.ok) throw new Error('Failed to fetch merit lists');
       const data = await response.json();
 
@@ -42,23 +43,24 @@ export default function StudentMeritList() {
     }
   };
 
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-4">Student Merit List</h1>
       <div className=" flex justify-between gap-4">
         <div className='w-full'>
-        <label className="block text-sm font-medium ">Enter CNIC Number</label>
+        <label className="block text-sm font-medium ">Enter CNIC or Form No</label>
         <Input
           type="text"
-          value={cnic}
-          onChange={(e) => setCnic(e.target.value)}
-          placeholder="Enter your CNIC number"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder="Enter your CNIC or Form No"
           className="w-full"
         />
         </div>
-          <Button className='mt-4' onClick={fetchMeritLists} disabled={loading}>
-        {loading ? 'Loading...' : 'Get Merit Lists'}
-      </Button>
+        <Button className='mt-4' onClick={fetchMeritLists} disabled={loading}>
+          {loading ? 'Loading...' : 'Get Merit Lists'}
+        </Button>
       </div>
     
 

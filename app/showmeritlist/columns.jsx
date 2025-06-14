@@ -38,19 +38,17 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
       <div className="flex gap-2">
         <Button
           onClick={() => handleConfirm(row.original.cnic)}
-          disabled={row.original.confirmed || row.original.not_appeared || row.original.alreadyAdmitted}
         >
           {row.original.confirmed ? 'Admited' : 'admit'}
         </Button>
         <Button
           onClick={() => handleNotAppeared(row.original.cnic)}
-          disabled={row.original.confirmed || row.original.not_appeared || row.original.alreadyAdmitted}
+
         >
           {row.original.not_appeared ? 'Not Appeared' : 'Not Appeare'}
         </Button>
         <Button
           onClick={() => handleLockSeat(row.original.cnic, row.original.lockseat)}
-          disabled={ row.original.not_appeared || row.original.alreadyAdmitted}
         >
           {row.original.lockseat ? 'Lock' : 'Unlock'}
         </Button>
@@ -63,7 +61,6 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
               row.original.program_short_name
             )
           }
-          disabled={row.original.not_appeared || row.original.alreadyAdmitted}
         >
           Cancel
         </Button>

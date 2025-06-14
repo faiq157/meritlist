@@ -1,6 +1,12 @@
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 const Aggregate = () => {
@@ -9,6 +15,13 @@ const Aggregate = () => {
   const [sscWeight, setSscWeight] = React.useState(10);
   const [interWeight, setInterWeight] = React.useState(50);
   const [testWeight, setTestWeight] = React.useState(40);
+
+  // Calculate total weight and validation status
+const totalWeight =
+  Number.parseInt(sscWeight) +
+  Number.parseInt(interWeight) +
+  (type === "engineering" ? Number.parseInt(testWeight) : 0);
+const hasError = totalWeight !== 100;
 
   useEffect(() => {
     if (isDialogOpen) {
@@ -38,7 +51,7 @@ const Aggregate = () => {
         id: type === "engineering" ? 1 : 2, // Example IDs
         ssc_weight: sscWeight,
         inter_weight: interWeight,
-        test_weight: type === "engineering" ? testWeight : 0.0, 
+        test_weight: type === "engineering" ? testWeight : 0.0,
       };
 
       const response = await fetch("/api/weights", {
@@ -69,9 +82,7 @@ const Aggregate = () => {
   return (
     <div>
       <div className="flex justify-end items-center">
-        <Button onClick={() => setIsDialogOpen(true)} >
-          Update Aggregate
-        </Button>
+        <Button onClick={() => setIsDialogOpen(true)}>Update Aggregate</Button>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -80,9 +91,12 @@ const Aggregate = () => {
             <DialogTitle>Update Aggregate</DialogTitle>
             <DialogClose />
           </DialogHeader>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Program Type</label>
+              <label className="block text-sm font-medium mb-1">
+                Program Type
+              </label>
               <select
                 value={type}
                 onChange={handleTypeChange}
@@ -92,32 +106,56 @@ const Aggregate = () => {
                 <option value="non-engineering">Non-Engineering</option>
               </select>
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">SSC Weight (%)</label>
-              <Input
+              <label className="block text-sm font-medium mb-1">
+                SSC Weight (%)
+              </label>
+             <Input
                 type="number"
-                value={sscWeight}
+                step="1"
+                value={parseInt(sscWeight) || 0}
                 onChange={(e) => setSscWeight(Number(e.target.value))}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">Intermediate Weight (%)</label>
+              <label className="block text-sm font-medium mb-1">
+                Intermediate Weight (%)
+              </label>
               <Input
                 type="number"
-                value={interWeight}
+                step="1"
+                value={parseInt(interWeight) || 0}
                 onChange={(e) => setInterWeight(Number(e.target.value))}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">Test Weight (%)</label>
-              <Input
-                type="number"
-                value={testWeight}
-                onChange={(e) => setTestWeight(Number(e.target.value))}
-                disabled={type === "non-engineering"} // Disable for Non-Engineering
-              />
+              <label className="block text-sm font-medium mb-1">
+                Test Weight (%)
+              </label>
+            <Input
+              type="number"
+              step="1"
+              value={parseInt(testWeight) || 0}
+              onChange={(e) => setTestWeight(Number(e.target.value))}
+              disabled={type === "non-engineering"}
+            />
             </div>
-            <Button onClick={updateWeightages} className="w-full mt-4">
+
+            {/* Validation Error */}
+            {hasError && (
+              <div className="text-red-600 text-sm font-medium text-center">
+                Total weight must be exactly 100%. Current total: {totalWeight}%
+              </div>
+            )}
+
+            <Button
+              onClick={updateWeightages}
+              className="w-full mt-4"
+              disabled={hasError}
+            >
               Save Changes
             </Button>
           </div>

@@ -80,6 +80,9 @@ export async function GET(req) {
     const programId = url.searchParams.get("programId");
     const programShortName = url.searchParams.get("programShortName");
     const cnic = url.searchParams.get("cnic");
+    const formNo = url.searchParams.get("form_no"); 
+
+    
 
     if (!programId && !programShortName && !cnic) {
       return new Response(
@@ -91,7 +94,7 @@ export async function GET(req) {
     let query = "";
     const params = [];
 
-    if (cnic) {
+    if (cnic || formNo) {
       // Fetch all entries by CNIC
     query = `
         SELECT 
@@ -108,11 +111,17 @@ export async function GET(req) {
           sa.selected_program_shortname
         FROM merit_list ml
         LEFT JOIN student_applications sa ON sa.cnic = ml.cnic
-        WHERE ml.cnic = ?
+        WHERE
+          ${cnic && formNo ? "(ml.cnic = ? OR ml.form_no = ?)" : cnic ? "ml.cnic = ?" : "ml.form_no = ?"}
         ORDER BY ml.version ASC
       `;
-
-      params.push(cnic);
+ if (cnic && formNo) {
+        params.push(cnic, formNo);
+      } else if (cnic) {
+        params.push(cnic);
+      } else if (formNo) {
+        params.push(formNo);
+      }
     } else {
       // Fetch by programId or programShortName
       query = `

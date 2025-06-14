@@ -23,7 +23,9 @@ export async function PUT(req) {
   try {
     const body = await req.json();
     const { id, ssc_weight, inter_weight, test_weight } = body;
-
+      parseInt(ssc_weight, 10);
+      parseInt(inter_weight, 10);
+     parseInt(test_weight, 10);
     // Validate input
     if (!id || typeof id !== "number") {
       return new Response(
