@@ -78,7 +78,41 @@ const filteredMeritList = useMemo(() => {
     );
   });
 }, [meritList, searchTerm]);
+const handleUnconfirm = async (cnic) => {
+  await fetch("/api/meritlist/unconfirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cnic, programId }),
+  });
+  setMeritList(list =>
+    list.map(item =>
+      item.cnic === cnic
+        ? {
+            ...item,
+            confirmed: 0,
+            alreadyAdmitted: false,
+            alreadyAdmittedShortName: null,
+            alreadyAdmittedProgramId: null,
+          }
+        : item
+    )
+  );
+};
 
+const handleUnmarkNotAppeared = async (cnic) => {
+  await fetch("/api/meritlist/unmark_not_appeared", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cnic, programId }),
+  });
+  setMeritList(list =>
+    list.map(item =>
+      item.cnic === cnic
+        ? { ...item, not_appeared: 0 }
+        : item
+    )
+  );
+};
 const handleCancelAdmission = async (cnic, program_id, program_short_name) => {
   if (!window.confirm("Are you sure you want to cancel this admission?")) return;
   const res = await fetch("/api/meritlist/cancel", {
@@ -283,7 +317,7 @@ const handleDownloadCategoryPDF = (category) => {
   </div>
 )  : (
   <DataTable
-    columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission })}
+    columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission,handleUnconfirm,handleUnmarkNotAppeared })}
     data={filteredMeritList}
   />
 )

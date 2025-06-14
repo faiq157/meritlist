@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { getSeatTypeFromShortName } from '../utils/utils';
 
-export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission }) => [
+export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission,  handleUnconfirm,
+  handleUnmarkNotAppeared }) => [
   { accessorKey: 'rank', header: 'Rank' },
   { accessorKey: 'form_no', header: 'Form No' },
   { accessorKey: 'name', header: 'Name' },
@@ -37,15 +38,22 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
     cell: ({ row }) => (
       <div className="flex gap-2">
         <Button
-          onClick={() => handleConfirm(row.original.cnic)}
+          onClick={() =>
+            row.original.confirmed
+              ? handleUnconfirm(row.original.cnic)
+              : handleConfirm(row.original.cnic)
+          }
         >
-          {row.original.confirmed ? 'Admited' : 'admit'}
+          {row.original.confirmed ? 'Admitted' : 'Admit'}
         </Button>
         <Button
-          onClick={() => handleNotAppeared(row.original.cnic)}
-
+          onClick={() =>
+            row.original.not_appeared
+              ? handleUnmarkNotAppeared(row.original.cnic)
+              : handleNotAppeared(row.original.cnic)
+          }
         >
-          {row.original.not_appeared ? 'Not Appeared' : 'Not Appeare'}
+          {row.original.not_appeared ? 'Not Appeared' : 'Not Appear'}
         </Button>
         <Button
           onClick={() => handleLockSeat(row.original.cnic, row.original.lockseat)}

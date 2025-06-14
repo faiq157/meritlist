@@ -62,17 +62,26 @@ export async function DELETE(req) {
     // Extract CNICs
     const cnics = students.map((student) => student.cnic);
 
-    // 2. Delete merit_list entries for this program and version
+    // 2. Delete from confirmed_seats for these CNICs and program
+    if (cnics.length > 0) {
+      const placeholders = cnics.map(() => "?").join(",");
+      const params = [...cnics, programId];
+      await connection.execute(
+        `DELETE FROM confirmed_seats WHERE cnic IN (${placeholders}) AND program_id = ?`,
+        params
+      );
+    }
+
+    // 3. Delete merit_list entries for this program and version
     await connection.execute(
       `DELETE FROM merit_list WHERE program_id = ? AND version = ?`,
       [programId, version]
     );
 
-    // 3. Update student_applications set selected_for_meritlist = 0 for those CNICs
+    // 4. Update student_applications set selected_for_meritlist = 0 for those CNICs
     if (cnics.length > 0) {
-      // Build placeholders for the IN clause (?, ?, ?...)
       const placeholders = cnics.map(() => "?").join(",");
-      const params = [...cnics];
+      const params = [...cnics, programId];
 
       const updateQuery = `
         UPDATE student_applications
@@ -80,14 +89,11 @@ export async function DELETE(req) {
         WHERE cnic IN (${placeholders}) AND program_id = ?
       `;
 
-      // Add programId param at the end
-      params.push(programId);
-
       await connection.execute(updateQuery, params);
     }
 
     return new Response(
-      JSON.stringify({ message: "Merit list version deleted and student flags updated" }),
+      JSON.stringify({ message: "Merit list version and confirmed seats deleted, student flags updated" }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -98,5 +104,4 @@ export async function DELETE(req) {
     );
   }
 }
-
 
