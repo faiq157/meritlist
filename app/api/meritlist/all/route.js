@@ -15,7 +15,7 @@ export async function GET(req) {
 
     // Get all merit lists for this program, grouped by version
     const [rows] = await connection.execute(
-      `SELECT * FROM merit_list WHERE program_id = ? ORDER BY version ASC, rank ASC`,
+      `SELECT * FROM merit_list WHERE program_id = ? ORDER BY version ASC, \`rank\` ASC`,
       [programId]
     );
 
