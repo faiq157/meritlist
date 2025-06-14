@@ -4,30 +4,29 @@ export async function POST(req) {
   const connection = await getConnection();
   try {
     const body = await req.json();
-    const { cnic, programId, lock,  } = body;
+    const { cnic, programId, lock } = body;
 
-    if (!cnic || !programId || typeof lock !== "boolean" ) {
+    if (!cnic || !programId || typeof lock !== "boolean") {
       return new Response(
-        JSON.stringify({ message: "CNIC, Program ID, lock (boolean), and Program Short Name are required" }),
+        JSON.stringify({ message: "CNIC, Program ID, and lock (boolean) are required" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     // Update lockseat
     await connection.execute(
-      `UPDATE merit_list 
-       SET lockseat = ? 
-       WHERE cnic = ? AND program_id = ?`,
+      `UPDATE merit_list SET lockseat = ? WHERE cnic = ? AND program_id = ?`,
       [lock, cnic, programId]
     );
 
-    // If locking, check if confirmed is also true, then insert into confirmed_seats
+    // If both confirmed and lockseat are true, insert into confirmed_seats
     if (lock) {
       const [rows] = await connection.execute(
-        `SELECT * FROM merit_list WHERE cnic = ? AND program_id = ? AND lockseat = 1 AND confirmed = 1`,
+        `SELECT program_short_name FROM merit_list WHERE cnic = ? AND program_id = ? AND confirmed = 1 AND lockseat = 1`,
         [cnic, programId]
       );
       if (rows.length > 0) {
+        const programShortName = rows[0].program_short_name;
         // Check if already in confirmed_seats to avoid duplicates
         const [exists] = await connection.execute(
           `SELECT * FROM confirmed_seats WHERE cnic = ? AND program_id = ?`,
@@ -35,8 +34,8 @@ export async function POST(req) {
         );
         if (exists.length === 0) {
           await connection.execute(
-            `INSERT INTO confirmed_seats (cnic, program_id) VALUES (?, ?)`,
-            [cnic, programId]
+            `INSERT INTO confirmed_seats (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
+            [cnic, programId, programShortName]
           );
         }
       }
