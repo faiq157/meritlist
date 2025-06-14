@@ -235,10 +235,58 @@ const handleDownloadCategoryPDF = (category) => {
       {loading ? (
         <Loading />
       ) : (
-        <DataTable
-          columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName,handleCancelAdmission })}
-          data={filteredMeritList}
-        />
+        filteredMeritList?.length === 0 ? (
+  <div className="p-8 max-w-xl mx-auto text-center text-gray-700 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 className="text-xl font-semibold text-gray-800">No Results Found</h2>
+    <p className="mt-2 text-sm text-gray-500">
+      We couldn’t find any data for this merit list.
+    </p>
+
+    <div className="mt-6">
+      <div className="text-sm font-medium text-gray-600 mb-3">Please check in:</div>
+
+      <div className="flex flex-wrap gap-3 justify-center">
+        {programShortName === 'CSE-O' && (
+          <>
+            <span className="px-4 py-1 rounded-full text-sm bg-blue-100 text-blue-800 transition duration-200 shadow hover:shadow-md">
+              Rational Seats
+            </span>
+            <span className="px-4 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 transition duration-200 shadow hover:shadow-md">
+              Self Finance Seats
+            </span>
+          </>
+        )}
+
+        {programShortName === 'CSE-S' && (
+          <>
+            <span className="px-4 py-1 rounded-full text-sm bg-green-100 text-green-800 transition duration-200 shadow hover:shadow-md">
+              Open Merit Seats
+            </span>
+            <span className="px-4 py-1 rounded-full text-sm bg-blue-100 text-blue-800 transition duration-200 shadow hover:shadow-md">
+              Rational Seats
+            </span>
+          </>
+        )}
+
+        {programShortName === 'CSE-R' && (
+          <>
+            <span className="px-4 py-1 rounded-full text-sm bg-green-100 text-green-800 transition duration-200 shadow hover:shadow-md">
+              Open Merit Seats
+            </span>
+            <span className="px-4 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 transition duration-200 shadow hover:shadow-md">
+              Self Finance Seats
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)  : (
+  <DataTable
+    columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission })}
+    data={filteredMeritList}
+  />
+)
       )}
     </div>
     </Suspense>
