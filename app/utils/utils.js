@@ -9,20 +9,30 @@ export const getSeatTypeFromShortName = (shortName) => {
   return "";
 };
 export const handleDownloadPDF = (meritList, version) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+        orientation: 'landscape', // wider page
+    unit: 'mm',
+    format:'a4'
+  });
   doc.text(`Merit List - ${version}`, 14, 10);
 
-  const headers = ["Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
+  const headers = [
+    "Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name",
+    "Confirmed", "Lock Seat", "Already Admitted"
+  ];
   const rows = meritList.map((item) => [
     item.rank,
     item.name,
     item.cnic,
     item.merit,
-   getSeatTypeFromShortName(item.program_short_name),
+    getSeatTypeFromShortName(item.program_short_name),
     item.program_name,
     item.program_short_name,
     item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
     item.lockseat ? "Locked" : "Unlocked",
+    item.alreadyAdmitted && item.alreadyAdmittedShortName && item.alreadyAdmittedShortName !== item.program_short_name
+      ? `Yes (${item.alreadyAdmittedShortName})`
+      : "No"
   ]);
 
   autoTable(doc, {
@@ -35,7 +45,10 @@ export const handleDownloadPDF = (meritList, version) => {
 };
 
 export const handleDownloadCSV = (meritList, version) => {
-  const headers = ["Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
+  const headers = [
+    "Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name",
+    "Confirmed", "Lock Seat", "Already Admitted"
+  ];
   const rows = meritList.map(item => [
     item.rank,
     item.name,
@@ -46,6 +59,9 @@ export const handleDownloadCSV = (meritList, version) => {
     item.program_short_name,
     item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
     item.lockseat ? "Locked" : "Unlocked",
+    item.alreadyAdmitted && item.alreadyAdmittedShortName && item.alreadyAdmittedShortName !== item.program_short_name
+      ? `Yes (${item.alreadyAdmittedShortName})`
+      : "No"
   ]);
   const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
 
@@ -57,7 +73,6 @@ export const handleDownloadCSV = (meritList, version) => {
   a.click();
   URL.revokeObjectURL(url);
 };
-
 export const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
@@ -71,7 +86,13 @@ export const handleDownloadAllVersionsPDF = async (programId) => {
   }
   const allVersions = await res.json();
 
-  const doc = new jsPDF();
+  const doc = new jsPDF(
+    {
+        orientation: 'landscape', 
+    unit: 'mm',
+    format:'a4'
+  }
+  );
   let first = true;
 
   for (const { version, meritList } of allVersions) {
@@ -90,6 +111,9 @@ export const handleDownloadAllVersionsPDF = async (programId) => {
       item.program_short_name,
       item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
       item.lockseat ? "Locked" : "Unlocked",
+      item.alreadyAdmitted && item.alreadyAdmittedShortName && item.alreadyAdmittedShortName !== item.program_short_name
+      ? `Yes (${item.alreadyAdmittedShortName})`
+      : "No"
     ]);
 
     autoTable(doc, {
@@ -127,6 +151,9 @@ export const handleDownloadAllVersionsCSV = async (programId) => {
         item.program_short_name,
         item.confirmed ? "Yes" : item.not_appeared ? "No" : "",
         item.lockseat ? "Locked" : "Unlocked",
+         item.alreadyAdmitted && item.alreadyAdmittedShortName && item.alreadyAdmittedShortName !== item.program_short_name
+      ? `Yes (${item.alreadyAdmittedShortName})`
+      : "No"
       ]);
     });
   });

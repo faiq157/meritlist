@@ -37,24 +37,26 @@ export const fetchVersions = async (programId) => {
     }
   };
   
-  export const confirmSeat = async (cnic, programId, programShortName, setMeritList) => {
-    try {
-      const res = await fetch(`/api/meritlist/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnic, programId, programShortName }),
-      });
-  
-      if (!res.ok) throw new Error();
-  
-      alert('Seat confirmed!');
-      setMeritList((prev) =>
-        prev.map((s) => (s.cnic === cnic ? { ...s, confirmed: true } : s))
-      );
-    } catch {
-      alert('Error confirming seat');
-    }
-  };
+export const confirmSeat = async (cnic, programId, programShortName, setMeritList) => {
+  try {
+    const res = await fetch(`/api/meritlist/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cnic, programId, programShortName }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || 'Error confirming seat');
+
+    alert(data.message || 'Seat confirmed!');
+    setMeritList((prev) =>
+      prev.map((s) => (s.cnic === cnic ? { ...s, confirmed: true } : s))
+    );
+  } catch (err) {
+    alert(err.message || 'Error confirming seat');
+  }
+};
   
   export const markAsNotAppeared = async (cnic, programId, programShortName, setMeritList) => {
     const res = await fetch('/api/meritlist/notappeared', {
