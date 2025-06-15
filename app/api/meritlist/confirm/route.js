@@ -15,16 +15,16 @@ export async function POST(req) {
     }
 
     // Check if user is already confirmed in any department
-    const [alreadyConfirmed] = await connection.execute(
-      `SELECT * FROM confirmed_seats WHERE cnic = ?`,
-      [cnic]
-    );
-    if (alreadyConfirmed.length > 0) {
-      return new Response(
-        JSON.stringify({ message: "User already confirmed in another department.", alreadyConfirmed: true }),
-        { status: 409, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // const [alreadyConfirmed] = await connection.execute(
+    //   `SELECT * FROM confirmed_seats WHERE cnic = ?`,
+    //   [cnic]
+    // );
+    // if (alreadyConfirmed.length > 0) {
+    //   return new Response(
+    //     JSON.stringify({ message: "User already confirmed in another department.", alreadyConfirmed: true }),
+    //     { status: 409, headers: { "Content-Type": "application/json" } }
+    //   );
+    // }
 
     // Set confirmed = 1
     await connection.execute(
