@@ -28,4 +28,5 @@ export const columns = [
   { accessorKey: "etea_total", header: "ETEA Total" },
   { accessorKey: "aggregate", header: "Aggregate" },
   { accessorKey: "matched_preference", header: "Matched Preference" }, // New column
+  {accessorKey:"matchedPreference", header:"Matched Preference Number" }, // New column for preference matching
 ];

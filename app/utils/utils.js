@@ -17,7 +17,7 @@ export const handleDownloadPDF = (meritList, version) => {
   doc.text(`Merit List - ${version}`, 14, 10);
 
   const headers = [
-    "Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name",
+    "Rank", "Name", "CNIC", "Merit","Matched Preference", "Category", "Program Name", "Program Short Name",
     "Confirmed", "Lock Seat", "Already Admitted"
   ];
   const rows = meritList.map((item) => [
@@ -25,6 +25,7 @@ export const handleDownloadPDF = (meritList, version) => {
     item.name,
     item.cnic,
     item.merit,
+    item.matched_preference,
     getSeatTypeFromShortName(item.program_short_name),
     item.program_name,
     item.program_short_name,
@@ -46,7 +47,7 @@ export const handleDownloadPDF = (meritList, version) => {
 
 export const handleDownloadCSV = (meritList, version) => {
   const headers = [
-    "Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name",
+    "Rank", "Name", "CNIC", "Merit","Matched Preference", "Category", "Program Name", "Program Short Name",
     "Confirmed", "Lock Seat", "Already Admitted"
   ];
   const rows = meritList.map(item => [
@@ -54,6 +55,7 @@ export const handleDownloadCSV = (meritList, version) => {
     item.name,
     item.cnic,
     item.merit,
+    item.matched_preference,
     getSeatTypeFromShortName(item.program_short_name),
     item.program_name,
     item.program_short_name,
@@ -100,12 +102,13 @@ export const handleDownloadAllVersionsPDF = async (programId) => {
     first = false;
    doc.text(`Merit List`, 14, 10);
 
-    const headers = ["Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
+    const headers = ["Rank", "Name", "CNIC", "Merit", "Matched Preference", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
     const rows = meritList.map((item) => [
       item.rank,
       item.name,
       item.cnic,
       item.merit,
+      item.matched_preference,
      getSeatTypeFromShortName(item.program_short_name),
       item.program_name,
       item.program_short_name,
@@ -135,7 +138,7 @@ export const handleDownloadAllVersionsCSV = async (programId) => {
   }
   const allVersions = await res.json();
 
-  const headers = ["Version", "Rank", "Name", "CNIC", "Merit", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
+  const headers = ["Version", "Rank", "Name", "CNIC", "Merit","Matched Preference", "Category", "Program Name", "Program Short Name", "Confirmed", "Lock Seat"];
   const rows = [];
 
   allVersions.forEach(({ version, meritList }) => {
@@ -146,6 +149,7 @@ export const handleDownloadAllVersionsCSV = async (programId) => {
         item.name,
         item.cnic,
         item.merit,
+        item.matched_preference,
         getSeatTypeFromShortName(item.program_short_name),
         item.program_name,
         item.program_short_name,

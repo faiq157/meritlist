@@ -18,10 +18,6 @@ export async function GET(req, { params }) {
       [id]
     );
 
-    
-
-
-
     if (rows.length === 0) {
       console.warn(`No program found with ID: ${id}`);
       return new Response(
