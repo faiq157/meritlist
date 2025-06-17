@@ -2,7 +2,7 @@ import { getConnection } from "@/lib/mysql";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id"); // you are passing ?id=123 in your fetch call
+  const id = searchParams.get("id");
 
   if (!id) {
     return new Response(
@@ -29,23 +29,26 @@ export async function GET(req) {
 
     const short_name = programRows[0].short_name;
 
-    // 2. Find student applications where any preference matches the program short_name
+    // 2. Get all columns that start with 'preference_'
+    const [columnsRows] = await connection.execute(
+      `SHOW COLUMNS FROM student_applications LIKE 'preference_%'`
+    );
+    const preferenceColumns = columnsRows.map(col => col.Field);
+
+    if (preferenceColumns.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No preference columns found" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Build dynamic WHERE clause
+    const whereClause = preferenceColumns.map(col => `${col} = ?`).join(" OR ");
+    const params = Array(preferenceColumns.length).fill(short_name);
+
     const [rows] = await connection.execute(
-      `
-      SELECT * FROM student_applications 
-      WHERE 
-        preference_1 = ? OR 
-        preference_2 = ? OR 
-        preference_3 = ? OR 
-        preference_4 = ? OR 
-        preference_5 = ? OR 
-        preference_6 = ? OR 
-        preference_7 = ? OR 
-        preference_8 = ? OR 
-        preference_9 = ? OR 
-        preference_10 = ?
-      `,
-      [short_name, short_name, short_name, short_name, short_name, short_name, short_name, short_name, short_name, short_name]
+      `SELECT * FROM student_applications WHERE ${whereClause}`,
+      params
     );
 
     if (rows.length === 0) {
@@ -55,7 +58,23 @@ export async function GET(req) {
       );
     }
 
-    return new Response(JSON.stringify(rows), {
+    // 4. For each student, find which preference matched
+    const result = rows.map(student => {
+      let matchedPreference = null;
+      for (let i = 0; i < preferenceColumns.length; i++) {
+        const col = preferenceColumns[i];
+        if (student[col] === short_name) {
+          matchedPreference = i + 1; // preference_1 => 1, etc.
+          break; // If you want only the first match
+        }
+      }
+      return {
+        ...student,
+        matchedPreference, // e.g. 1, 2, 3, etc. or null if not found
+      };
+    });
+
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

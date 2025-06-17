@@ -4,7 +4,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { programId, programName, programShortName, meritList } = body;
-
+    
     if (!programId || !Array.isArray(meritList)) {
       return new Response(
         JSON.stringify({ message: "Invalid data provided" }),
@@ -34,7 +34,8 @@ export async function POST(req) {
         student.form_no,
         student.category,
         newVersion,
-        0 // Default availed status to 0 (not availed)
+        0 ,
+         student.matchedPreference
       ];
     });
     
@@ -53,7 +54,8 @@ export async function POST(req) {
           form_no,
           category,
           version,
-          availed
+          availed,
+           matched_preference
         ) VALUES ?`,
         [values]
 );
@@ -107,6 +109,7 @@ export async function GET(req) {
           ml.version,
           ml.form_no,
           ml.category,
+          ml.matchedPreference
           sa.selected_for_meritlist,
           sa.selected_program_shortname
         FROM merit_list ml

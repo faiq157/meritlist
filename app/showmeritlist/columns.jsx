@@ -8,6 +8,7 @@ export const columns = ({ handleConfirm, handleNotAppeared, handleLockSeat, prog
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'cnic', header: 'CNIC' },
   { accessorKey: 'merit', header: 'Merit' },
+  {accessorKey:'matched_preference',header:'preference'},
   {
     accessorFn: row => getSeatTypeFromShortName(row.program_short_name),
     id: 'seat_type',

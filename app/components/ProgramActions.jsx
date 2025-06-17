@@ -90,6 +90,7 @@ const ProgramActions = ({ program }) => {
             cnic: student.cnic,
             merit,
             form_no: student.form_no,
+            matchedPreference : student?.matchedPreference
           };
         });
       const sortedMeritList = meritList
