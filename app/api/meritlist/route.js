@@ -109,7 +109,7 @@ export async function GET(req) {
           ml.version,
           ml.form_no,
           ml.category,
-          ml.matchedPreference
+          ml.matched_preference,
           sa.selected_for_meritlist,
           sa.selected_program_shortname
         FROM merit_list ml
