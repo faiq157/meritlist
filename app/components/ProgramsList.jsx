@@ -120,8 +120,14 @@ const deleteProgram = async (id) => {
         <CirclePlus/> Program
         </Button>
        <Aggregate/> 
-        </div>
-       </div>
+     
+        <Link href="/masterlist">
+          <BookOpen className="mr-2" />
+          Versions
+        </Link>
+
+      </div>
+    </div>
 
       {loading ? (
         <><Loading/></>

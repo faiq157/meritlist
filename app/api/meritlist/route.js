@@ -96,35 +96,27 @@ export async function GET(req) {
     let query = "";
     const params = [];
 
-    if (cnic || formNo) {
-      // Fetch all entries by CNIC
-    query = `
-        SELECT 
-          ml.program_name,
-          ml.program_short_name,
-          \`ml\`.\`rank\`,
-          ml.merit,
-          ml.name,
-          ml.availed,
-          ml.version,
-          ml.form_no,
-          ml.category,
-          ml.matched_preference,
-          sa.selected_for_meritlist,
-          sa.selected_program_shortname
-        FROM merit_list ml
-        LEFT JOIN student_applications sa ON sa.cnic = ml.cnic
-        WHERE
-          ${cnic && formNo ? "(ml.cnic = ? OR ml.form_no = ?)" : cnic ? "ml.cnic = ?" : "ml.form_no = ?"}
-        ORDER BY ml.version ASC
-      `;
- if (cnic && formNo) {
-        params.push(cnic, formNo);
-      } else if (cnic) {
-        params.push(cnic);
-      } else if (formNo) {
-        params.push(formNo);
-      }
+ if (cnic || formNo) {
+  // Fetch all entries by CNIC
+  query = `
+      SELECT 
+        ml.*,
+        sa.selected_for_meritlist,
+        sa.selected_program_shortname
+      FROM merit_list ml
+      LEFT JOIN student_applications sa ON sa.cnic = ml.cnic
+      WHERE
+        ${cnic && formNo ? "(ml.cnic = ? OR ml.form_no = ?)" : cnic ? "ml.cnic = ?" : "ml.form_no = ?"}
+      ORDER BY ml.version ASC
+    `;
+  if (cnic && formNo) {
+    params.push(cnic, formNo);
+  } else if (cnic) {
+    params.push(cnic);
+  } else if (formNo) {
+    params.push(formNo);
+  }
+
     } else {
       // Fetch by programId or programShortName
       query = `
