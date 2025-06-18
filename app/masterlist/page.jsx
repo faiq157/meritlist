@@ -17,6 +17,7 @@ export default function MasterList() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [meritList, setMeritList] = useState([]);
   const [loadingMerit, setLoadingMerit] = useState(false);
+  const [search, setSearch] = useState("");
 
 useEffect(() => {
   fetch('/api/masterlist/studentlist')
@@ -70,14 +71,29 @@ useEffect(() => {
       .finally(() => setLoadingMerit(false));
   };
 
+  const filteredData = data.filter(row => {
+  const q = search.toLowerCase();
+  return (
+    row.name?.toLowerCase().includes(q) ||
+    row.cnic?.toLowerCase().includes(q) ||
+    row.form_no?.toLowerCase().includes(q)
+  );
+});
   if (!data.length) return <div className="p-4">Loading...</div>;
 
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Master Student List</h2>
+      <input
+        type="text"
+        placeholder="Search by Name, CNIC, or Form No"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="mb-4 px-3 py-2 border rounded w-full max-w-md"
+      />
       <DataTable
         columns={columns}
-        data={data}
+        data={filteredData}
       />
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
   <DialogContent className="max-w-2xl w-full">
