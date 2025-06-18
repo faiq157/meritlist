@@ -121,9 +121,9 @@ const deleteProgram = async (id) => {
         </Button>
        <Aggregate/> 
      
-        <Link href="/masterlist">
+        <Link className="flex justify-center items-center text-white bg-black p-2 rounded-md" href="/masterlist">
           <BookOpen className="mr-2" />
-          Versions
+          Master List
         </Link>
 
       </div>
