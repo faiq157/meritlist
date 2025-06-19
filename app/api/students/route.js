@@ -59,21 +59,31 @@ export async function GET(req) {
     }
 
     // 4. For each student, find which preference matched
-    const result = rows.map(student => {
-      let matchedPreference = null;
-      for (let i = 0; i < preferenceColumns.length; i++) {
-        const col = preferenceColumns[i];
-        if (student[col] === short_name) {
-          matchedPreference = i + 1; // preference_1 => 1, etc.
-          break; // If you want only the first match
-        }
-      }
-      return {
-        ...student,
-        matchedPreference, // e.g. 1, 2, 3, etc. or null if not found
-      };
-    });
+console.log("Short name to match:", short_name);
+console.log("Preference columns:", preferenceColumns);
+console.log("Fetched students:", rows.length);
 
+const result = rows.map(student => {
+  let matchedPreference = null;
+  for (let i = 0; i < preferenceColumns.length; i++) {
+    const col = preferenceColumns[i];
+    if (student[col] === short_name) {
+      const match = col.match(/_(\d+)$/);
+      matchedPreference = match ? Number(match[1]) : i + 1;
+      console.log(
+        `Student ${student.name} (${student.cnic}) matched at ${col} (number: ${matchedPreference})`
+      );
+      break;
+    }
+  }
+  if (matchedPreference === null) {
+    console.log(`Student ${student.name} (${student.cnic}) did not match any preference`);
+  }
+  return {
+    ...student,
+    matchedPreference,
+  };
+});
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { "Content-Type": "application/json" },
