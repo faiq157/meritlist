@@ -112,35 +112,47 @@ useEffect(() => {
       <div className="overflow-x-auto">
         <table className="min-w-full border">
           <thead>
-            <tr>
-              {Object.keys(meritList[0]).map((key) => (
-                <th key={key} className="border px-2 py-1 text-xs">{key}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {meritList.map((row, idx) => (
-              <tr key={idx}>
-                {Object.keys(meritList[0]).map((key, i) => {
-                  const booleanFields = [
-                    "availed",
-                    "confirmed",
-                    "not_appeared",
-                    "lockseat",
-                    "unlockseat",
-                    "selected_for_meritlist"
-                  ];
-                  let value = row[key];
-                  if (booleanFields.includes(key)) {
-                    value = value === 1 ? "Yes" : "No";
-                  }
-                  return (
-                    <td key={i} className="border px-2 py-1 text-xs">{value}</td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
+  <tr>
+    {Object.keys(meritList[0])
+      .filter(
+        key =>
+          key !== "selected_for_meritlist" &&
+          key !== "selected_program_shortname"
+      )
+      .map((key) => (
+        <th key={key} className="border px-2 py-1 text-xs">{key}</th>
+      ))}
+  </tr>
+</thead>
+<tbody>
+  {meritList.map((row, idx) => (
+    <tr key={idx}>
+      {Object.keys(meritList[0])
+        .filter(
+          key =>
+            key !== "selected_for_meritlist" &&
+            key !== "selected_program_shortname"
+        )
+        .map((key, i) => {
+          const booleanFields = [
+            "availed",
+            "confirmed",
+            "not_appeared",
+            "lockseat",
+            "unlockseat",
+            "selected_for_meritlist"
+          ];
+          let value = row[key];
+          if (booleanFields.includes(key)) {
+            value = value === 1 ? "Yes" : "No";
+          }
+          return (
+            <td key={i} className="border px-2 py-1 text-xs">{value}</td>
+          );
+        })}
+    </tr>
+  ))}
+</tbody>
         </table>
       </div>
     )}
