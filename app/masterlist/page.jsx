@@ -26,7 +26,9 @@ useEffect(() => {
       setData(rows);
       if (rows.length > 0) {
         const keys = Object.keys(rows[0]);
+        const hiddenColumns = ["selected_for_meritlist", "selected_program_shortname"];
         const filteredKeys = keys.filter(key =>
+          !hiddenColumns.includes(key) &&
           rows.some(
             row =>
               row[key] !== null &&

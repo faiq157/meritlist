@@ -27,6 +27,5 @@ export const columns = [
   { accessorKey: "etea_obtain", header: "ETEA Obtain" },
   { accessorKey: "etea_total", header: "ETEA Total" },
   { accessorKey: "aggregate", header: "Aggregate" },
-  { accessorKey: "matched_preference", header: "Matched Preference" }, // New column
-  {accessorKey:"matchedPreference", header:"Matched Preference Number" }, // New column for preference matching
+  {accessorKey:"matchedPreference", header:"Matched Preference Number", cell: ({ row }) => row.original.matchedReference ?? "-", }, // New column for preference matching
 ];

@@ -26,7 +26,7 @@ const ProgramActions = ({ program }) => {
   const [weights, setWeights] = useState(null);
   const router = useRouter();
   const [suffix, setSuffix] = useState("O");
-  const [seats, setSeats] = useState(0); // <-- Add state for seats
+  const [seats, setSeats] = useState(0);
 
   const displayedShortName = program?.short_name
     ? `${program.short_name.split("-")[0]}-${suffix}`.trim()
@@ -44,15 +44,21 @@ const ProgramActions = ({ program }) => {
           return Array.from({ length: 10 }, (_, i) => student[`preference_${i + 1}`]?.trim().toLowerCase())
             .includes(displayedShortName.trim().toLowerCase());
         });
+        // Dynamically find the matched reference number for the current filter
         const mappedData = filteredData.map(student => {
-          const appliedPreference = Array.from({ length: 10 }, (_, i) => ({
-            pref: `preference_${i + 1}`,
-            value: student[`preference_${i + 1}`],
-          })).find(pref => pref.value?.trim().toLowerCase() === displayedShortName.trim().toLowerCase());
+          let matchedReference = null;
+          for (let i = 1; i <= 10; i++) {
+            if (
+              student[`preference_${i}`] &&
+              student[`preference_${i}`].trim().toLowerCase() === displayedShortName.trim().toLowerCase()
+            ) {
+              matchedReference = i;
+              break;
+            }
+          }
           return {
             ...student,
-            applied_preference: appliedPreference?.pref || null,
-            matched_preference: appliedPreference?.value || null,
+            matchedReference, // This will be 1, 2, 3, ... or null if not matched
           };
         });
         setData(mappedData);
@@ -67,7 +73,7 @@ const ProgramActions = ({ program }) => {
       }
     };
     fetchData();
-  }, [displayedShortName, program?.id]);
+  }, [displayedShortName, program?.id, suffix]);
 
   const generateMeritList = async () => {
     if (!program?.id || !weights) return;
@@ -90,7 +96,7 @@ const ProgramActions = ({ program }) => {
             cnic: student.cnic,
             merit,
             form_no: student.form_no,
-            matchedPreference : student?.matchedPreference
+            matchedPreference: student?.matchedReference // Use matchedReference here
           };
         });
       const sortedMeritList = meritList
@@ -142,8 +148,6 @@ const ProgramActions = ({ program }) => {
               <SelectItem value="S">Self Seats</SelectItem>
             </SelectContent>
           </Select>
-          {/* <span className="ml-2 font-semibold">{displayedShortName}</span> */}
-          {/* Input for number of seats */}
           <label>Select Number of Seats</label>
           <input
             type="number"
