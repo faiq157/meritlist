@@ -97,49 +97,32 @@ useEffect(() => {
         columns={columns}
         data={filteredData}
       />
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-  <DialogContent className="max-w-2xl w-full">
+      <Dialog  open={dialogOpen} onOpenChange={setDialogOpen}>
+  <DialogContent className="" >
     <DialogHeader>
       <DialogTitle>
         Merit List Data for {selectedStudent?.name} ({selectedStudent?.cnic})
       </DialogTitle>
     </DialogHeader>
-    {loadingMerit ? (
-      <div>Loading merit list...</div>
-    ) : meritList.length === 0 ? (
-      <div>No merit list data found for this student.</div>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="min-w-full border">
-          <thead>
-  <tr>
-    {Object.keys(meritList[0])
-      .filter(
-        key =>
-          key !== "selected_for_meritlist" &&
-          key !== "selected_program_shortname"
-      )
-      .map((key) => (
-        <th key={key} className="border px-2 py-1 text-xs">{key}</th>
-      ))}
-  </tr>
-</thead>
-<tbody>
+   <div>
   {meritList.map((row, idx) => (
-    <tr key={idx}>
-      {Object.keys(meritList[0])
+    <div key={idx} className="border rounded shadow p-4 bg-white">
+      {Object.keys(row)
         .filter(
           key =>
             key !== "selected_for_meritlist" &&
-            key !== "selected_program_shortname"
+            key !== "selected_program_shortname" &&
+            key !== "id" &&
+            key !== "program_id" &&
+            key !== "unlockseat" &&
+            key !== "availed"
         )
-        .map((key, i) => {
+        .map((key) => {
           const booleanFields = [
             "availed",
             "confirmed",
             "not_appeared",
             "lockseat",
-            "unlockseat",
             "selected_for_meritlist"
           ];
           let value = row[key];
@@ -147,15 +130,15 @@ useEffect(() => {
             value = value === 1 ? "Yes" : "No";
           }
           return (
-            <td key={i} className="border px-2 py-1 text-xs">{value}</td>
+            <div key={key} className="mb-1">
+              <span className="font-semibold capitalize">{key.replace(/_/g, " ")}:</span>{" "}
+              <span>{value}</span>
+            </div>
           );
         })}
-    </tr>
+    </div>
   ))}
-</tbody>
-        </table>
-      </div>
-    )}
+</div>
   </DialogContent>
 </Dialog>
     </div>
