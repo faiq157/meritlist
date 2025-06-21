@@ -104,7 +104,7 @@ useEffect(() => {
         Merit List Data for {selectedStudent?.name} ({selectedStudent?.cnic})
       </DialogTitle>
     </DialogHeader>
-   <div>
+   <div className='max-h-[89vh] overflow-y-auto'>
   {meritList.map((row, idx) => (
     <div key={idx} className="border rounded shadow p-4 bg-white">
       {Object.keys(row)
