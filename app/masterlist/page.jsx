@@ -86,13 +86,19 @@ useEffect(() => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Master Student List</h2>
-      <input
+       <div className='flex items-center justify-between mb-4'>
+     <input
         type="text"
         placeholder="Search by Name, CNIC, or Form No"
         value={search}
         onChange={e => setSearch(e.target.value)}
         className="mb-4 px-3 py-2 border rounded w-full max-w-md"
       />
+        <div className="mb-2 font-semibold">
+        Total Seats: {filteredData.length}
+      </div>
+       </div>
+ 
       <DataTable
         columns={columns}
         data={filteredData}
