@@ -8,6 +8,15 @@ export const getSeatTypeFromShortName = (shortName) => {
   if (lastChar === "S") return "Self Finance";
   return "";
 };
+
+export const getSeatTypeColor = (shortName) => {
+  if (!shortName || typeof shortName !== "string") return "bg-gray-100 text-gray-800";
+  const lastChar = shortName.trim().slice(-1).toUpperCase();
+  if (lastChar === "O") return "bg-green-100 text-green-800";
+  if (lastChar === "R") return "bg-blue-100 text-blue-800";
+  if (lastChar === "S") return "bg-yellow-100 text-yellow-800";
+  return "bg-gray-100 text-gray-800";
+};
 export const handleDownloadPDF = (meritList, version) => {
   const doc = new jsPDF({
         orientation: 'landscape', // wider page
