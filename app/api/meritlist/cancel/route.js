@@ -4,34 +4,33 @@ export async function POST(req) {
   const connection = await getConnection();
   try {
     const { cnic, program_id, program_short_name } = await req.json();
-    if (!cnic || !program_id) {
-      return new Response(JSON.stringify({ message: "CNIC and program_id are required" }), { status: 400 });
+    if (!cnic) {
+      return new Response(JSON.stringify({ message: "CNIC is required" }), { status: 400 });
     }
 
-    // Insert into cancelled_meritlist
+    // Insert into cancelled_meritlist only if not already present
     await connection.execute(
-      `INSERT INTO cancelled_meritlist (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
+      `INSERT IGNORE INTO cancelled_meritlist (cnic, program_id, program_short_name) VALUES (?, ?, ?)`,
       [cnic, program_id, program_short_name]
     );
 
-    // Remove from merit_list
+    // Remove from ALL merit_list entries (all departments)
     await connection.execute(
-      `DELETE FROM merit_list WHERE cnic = ? AND program_id = ?`,
-      [cnic, program_id]
+      `DELETE FROM merit_list WHERE cnic = ?`,
+      [cnic]
     );
 
     // Optionally, also remove from confirmed_seats
     await connection.execute(
-      `DELETE FROM confirmed_seats WHERE cnic = ? AND program_id = ?`,
-      [cnic, program_id]
+      `DELETE FROM confirmed_seats WHERE cnic = ?`,
+      [cnic]
     );
 
-    return new Response(JSON.stringify({ message: "Admission cancelled and student removed from merit list." }), { status: 200 });
+    return new Response(JSON.stringify({ message: "Admission cancelled and student removed from all merit lists." }), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ message: error.message }), { status: 500 });
   }
 }
-
 
 export async function GET(req) {
   const connection = await getConnection();

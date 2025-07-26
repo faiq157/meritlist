@@ -58,19 +58,6 @@ export const confirmSeat = async (cnic, programId, programShortName, setMeritLis
   }
 };
   
-  export const markAsNotAppeared = async (cnic, programId, programShortName, setMeritList) => {
-    const res = await fetch('/api/meritlist/notappeared', {
-      method: 'POST',
-      body: JSON.stringify({ cnic, programId, programShortName }),
-    });
-  
-    if (res.ok) {
-      setMeritList((prev) =>
-        prev.map((item) => (item.cnic === cnic ? { ...item, not_appeared: true } : item))
-      );
-    }
-  };
-  
   export const toggleLockSeat = async (cnic, programId, currentLock, setMeritList) => {
     const res = await fetch('/api/meritlist/lockseat', {
       method: 'POST',

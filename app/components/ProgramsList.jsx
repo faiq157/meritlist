@@ -126,6 +126,11 @@ const deleteProgram = async (id) => {
           Master List
         </Link>
 
+        <Link className="flex justify-center items-center text-white bg-blue-600 p-2 rounded-md" href="/student-status">
+          <BookOpen className="mr-2" />
+          Student Status
+        </Link>
+
       </div>
     </div>
 
