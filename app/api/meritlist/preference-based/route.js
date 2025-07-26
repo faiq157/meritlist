@@ -1,4 +1,6 @@
 import { getConnection } from "@/lib/mysql";
+
+// POST: Create preference-based merit list with duplicate checking
 export async function POST(req) {
   const connection = await getConnection();
   try {
@@ -20,36 +22,74 @@ export async function POST(req) {
     const currentVersion = rows[0]?.maxVersion || 0;
     const newVersion = currentVersion + 1;
 
-    // Step 1: Check which students already exist in any merit list
+    // Step 1: Check which students already exist in other merit lists
     const studentCNICs = meritList.map(student => student.cnic);
     const placeholders = studentCNICs.map(() => "?").join(",");
     
     const [existingStudents] = await connection.execute(
-      `SELECT cnic FROM merit_list WHERE cnic IN (${placeholders})`,
-      studentCNICs
+      `SELECT cnic, program_id, program_short_name, matched_preference 
+       FROM merit_list 
+       WHERE cnic IN (${placeholders}) AND program_id != ?`,
+      [...studentCNICs, programId]
     );
 
-    // Step 1b: Check which students have been cancelled
-    const [cancelledStudents] = await connection.execute(
-      `SELECT cnic FROM cancelled_meritlist WHERE cnic IN (${placeholders})`,
-      studentCNICs
-    );
-    const cancelledCNICs = new Set(cancelledStudents.map(student => student.cnic));
+    // Create a map of existing students with their current preferences
+    const existingStudentMap = new Map();
+    existingStudents.forEach(student => {
+      if (!existingStudentMap.has(student.cnic)) {
+        existingStudentMap.set(student.cnic, []);
+      }
+      existingStudentMap.get(student.cnic).push({
+        programId: student.program_id,
+        programShortName: student.program_short_name,
+        preference: student.matched_preference
+      });
+    });
 
-    // Create a set of existing CNICs for fast lookup
-    const existingCNICs = new Set(existingStudents.map(student => student.cnic));
+    // Step 2: Filter students to only include those who should be in this merit list
+    const filteredMeritList = meritList.filter(student => {
+      const existingEntries = existingStudentMap.get(student.cnic);
+      
+      // If student doesn't exist in other merit lists, include them
+      if (!existingEntries || existingEntries.length === 0) {
+        return true;
+      }
+      
+      // Check if this program has a higher preference (lower number) than existing entries
+      const currentPreference = Number(student.matchedPreference);
+      const hasHigherPreference = existingEntries.every(entry => 
+        currentPreference < Number(entry.preference)
+      );
+      
+      return hasHigherPreference;
+    });
 
-    // Step 2: Filter out students who already exist in any merit list or have been cancelled
-    const newStudents = meritList.filter(student => !existingCNICs.has(student.cnic) && !cancelledCNICs.has(student.cnic));
-    const skippedStudents = meritList.filter(student => existingCNICs.has(student.cnic) || cancelledCNICs.has(student.cnic));
+    // Step 3: Remove students from lower preference merit lists
+    const studentsToRemove = meritList.filter(student => {
+      const existingEntries = existingStudentMap.get(student.cnic);
+      if (!existingEntries) return false;
+      
+      const currentPreference = Number(student.matchedPreference);
+      return existingEntries.some(entry => currentPreference < Number(entry.preference));
+    });
 
-    console.log(`Total students: ${meritList.length}`);
-    console.log(`New students to add: ${newStudents.length}`);
-    console.log(`Skipped students (already exist or cancelled): ${skippedStudents.length}`);
+    // Remove students from lower preference lists
+    for (const student of studentsToRemove) {
+      const existingEntries = existingStudentMap.get(student.cnic);
+      const currentPreference = Number(student.matchedPreference);
+      
+      for (const entry of existingEntries) {
+        if (currentPreference < Number(entry.preference)) {
+          await connection.execute(
+            `DELETE FROM merit_list WHERE cnic = ? AND program_id = ?`,
+            [student.cnic, entry.programId]
+          );
+        }
+      }
+    }
 
-    // Step 3: Insert only the new students
-    const values = newStudents.map((student, index) => {
-      console.log("Adding new student:", student.name, student.cnic);
+    // Step 4: Insert the filtered merit list
+    const values = filteredMeritList.map((student, index) => {
       return [
         programId,
         programName,
@@ -88,26 +128,24 @@ export async function POST(req) {
 
     return new Response(
       JSON.stringify({ 
-        message: "Merit list stored successfully", 
+        message: "Preference-based merit list stored successfully", 
         version: newVersion,
         totalStudents: meritList.length,
-        addedStudents: newStudents.length,
-        skippedStudents: skippedStudents.length,
-        targetSeats: meritList.length,
-        seatsFilled: newStudents.length,
-        skippedCNICs: Array.from(existingCNICs)
+        filteredStudents: filteredMeritList.length,
+        removedFromOtherLists: studentsToRemove.length
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error storing merit list:", error);
+    console.error("Error storing preference-based merit list:", error);
     return new Response(
-      JSON.stringify({ message: "Error storing merit list", error: error.message }),
+      JSON.stringify({ message: "Error storing preference-based merit list", error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
 
+// GET: Get preference-based merit list with highest preference filtering
 export async function GET(req) {
   const connection = await getConnection();
   try {
@@ -115,10 +153,7 @@ export async function GET(req) {
     const programId = url.searchParams.get("programId");
     const programShortName = url.searchParams.get("programShortName");
     const cnic = url.searchParams.get("cnic");
-    const formNo = url.searchParams.get("form_no"); 
     const showOnlyHighestPreference = url.searchParams.get("highestPreferenceOnly") === "true";
-
-    
 
     if (!programId && !programShortName && !cnic) {
       return new Response(
@@ -130,27 +165,19 @@ export async function GET(req) {
     let query = "";
     const params = [];
 
- if (cnic || formNo) {
-  // Fetch all entries by CNIC
-  query = `
-      SELECT 
-        ml.*,
-        sa.selected_for_meritlist,
-        sa.selected_program_shortname
-      FROM merit_list ml
-      LEFT JOIN student_applications sa ON sa.cnic = ml.cnic
-      WHERE
-        ${cnic && formNo ? "(ml.cnic = ? OR ml.form_no = ?)" : cnic ? "ml.cnic = ?" : "ml.form_no = ?"}
-      ORDER BY ml.version ASC
-    `;
-  if (cnic && formNo) {
-    params.push(cnic, formNo);
-  } else if (cnic) {
-    params.push(cnic);
-  } else if (formNo) {
-    params.push(formNo);
-  }
-
+    if (cnic) {
+      // Fetch all entries by CNIC
+      query = `
+        SELECT 
+          ml.*,
+          sa.selected_for_meritlist,
+          sa.selected_program_shortname
+        FROM merit_list ml
+        LEFT JOIN student_applications sa ON sa.cnic = ml.cnic
+        WHERE ml.cnic = ?
+        ORDER BY ml.matched_preference ASC, ml.version ASC
+      `;
+      params.push(cnic);
     } else {
       // Fetch by programId or programShortName
       query = `
@@ -168,7 +195,7 @@ export async function GET(req) {
         params.push(programShortName);
       }
 
-      query += " ORDER BY version ASC";
+      query += " ORDER BY version ASC, matched_preference ASC";
     }
 
     const [rows] = await connection.execute(query, params);
@@ -181,21 +208,35 @@ export async function GET(req) {
       });
     }
 
-    // Filter logic: skip CNICs already seen in earlier versions
+    // Filter logic for highest preference only
+    if (showOnlyHighestPreference) {
+      const seen = new Set();
+      const filtered = [];
+
+      for (const row of rows) {
+        if (!seen.has(row.cnic)) {
+          // Only include if matched_preference is 1, 2, 3, or 4
+          if ([1, 2, 3, 4].includes(Number(row.matched_preference))) {
+            filtered.push(row);
+          }
+          seen.add(row.cnic);
+        }
+      }
+
+      return new Response(JSON.stringify(filtered), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Regular filtering: skip CNICs already seen in earlier versions
     const seen = new Set();
     const filtered = [];
 
     for (const row of rows) {
       if (!seen.has(row.cnic)) {
-        // If highestPreferenceOnly is true, only include students with preference 1,2,3,4
-        if (showOnlyHighestPreference) {
-          if ([1, 2, 3, 4].includes(Number(row.matched_preference))) {
-            filtered.push(row);
-          }
-        } else {
-          filtered.push(row);
-        }
-        seen.add(row.cnic); // mark CNIC as already included
+        filtered.push(row);
+        seen.add(row.cnic);
       }
     }
 
@@ -205,16 +246,15 @@ export async function GET(req) {
     });
 
   } catch (error) {
-    console.error("Error fetching merit lists:", error);
+    console.error("Error fetching preference-based merit lists:", error);
     return new Response(
-      JSON.stringify({ message: "Error fetching merit lists", error: error.message }),
+      JSON.stringify({ message: "Error fetching preference-based merit lists", error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
 
-
-
+// DELETE: Delete preference-based merit list
 export async function DELETE(req) {
   const connection = await getConnection();
   try {
@@ -236,16 +276,14 @@ export async function DELETE(req) {
     );
 
     return new Response(
-      JSON.stringify({ message: 'Merit list and confirmed seats deleted successfully' }),
+      JSON.stringify({ message: 'Preference-based merit list deleted successfully' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error deleting merit list:', error);
+    console.error('Error deleting preference-based merit list:', error);
     return new Response(
-      JSON.stringify({ message: 'Error deleting merit list', error: error.message }),
+      JSON.stringify({ message: 'Error deleting preference-based merit list', error: error.message }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
-}
-
-  
+} 

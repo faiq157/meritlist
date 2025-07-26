@@ -7,11 +7,11 @@ import { DataTable } from '../programs/[id]/data-table';
 import Loading from '../components/Loader';
 import { columns } from './columns';
 import { handleDownloadAllVersionsCSV, handleDownloadAllVersionsPDF, handleDownloadCancelledMeritListCSV, handleDownloadCSV, handleDownloadPDF, ordinal } from '../utils/utils';
-import { confirmSeat, deleteVersion, fetchVersions, markAsNotAppeared, toggleLockSeat } from '../components/actions';
+import { confirmSeat, deleteVersion, fetchVersions, toggleLockSeat } from '../components/actions';
 import { useMeritList } from '../hooks/useMeritList';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 
 export default function ShowMeritList() {
@@ -20,6 +20,7 @@ export default function ShowMeritList() {
   const programShortName = searchParams.get('programShortName');
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [programs, setPrograms] = useState([]);
 
   const {
     versions,
@@ -30,6 +31,12 @@ export default function ShowMeritList() {
     loading,
     fetchMeritList,
   } = useMeritList(programId, programShortName); 
+
+  useEffect(() => {
+    fetch('/api/programs')
+      .then(res => res.json())
+      .then(setPrograms);
+  }, []);
 
   const handleConfirm = (cnic) => {
     confirmSeat(cnic, programId, programShortName, setMeritList);
@@ -125,6 +132,30 @@ const handleCancelAdmission = async (cnic, program_id, program_short_name) => {
   // Refresh your merit list here
   fetchMeritList();
 };
+  const handleShiftDepartment = async (cnic, targetProgram) => {
+    if (!window.confirm("Are you sure you want to shift this student to another department?")) return;
+    try {
+      if (!targetProgram) {
+        throw new Error("Target program not found");
+      }
+      const res = await fetch('/api/meritlist/shift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          cnic,
+          program_id: targetProgram.id,
+          program_name: targetProgram.name,
+          program_short_name: targetProgram.short_name
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to shift student");
+      alert("Student shifted successfully!");
+      fetchMeritList();
+    } catch (err) {
+      alert(err.message || "Error shifting student");
+    }
+  };
  useEffect(() => {
   if (!meritList.length) return;
   const checkConfirmed = async () => {
@@ -317,7 +348,7 @@ const handleDownloadCategoryPDF = (category) => {
   </div>
 )  : (
   <DataTable
-    columns={columns({ handleConfirm, handleNotAppeared, handleLockSeat, programId, programShortName, handleCancelAdmission,handleUnconfirm,handleUnmarkNotAppeared })}
+    columns={columns({ handleConfirm, handleLockSeat, programId, programShortName, handleCancelAdmission, handleUnconfirm, handleShiftDepartment, programs })}
     data={filteredMeritList}
   />
 )

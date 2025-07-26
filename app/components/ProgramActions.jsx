@@ -27,6 +27,8 @@ const ProgramActions = ({ program }) => {
   const router = useRouter();
   const [suffix, setSuffix] = useState("O");
   const [seats, setSeats] = useState(0);
+  const [generationResult, setGenerationResult] = useState(null);
+  const [useSmartGeneration, setUseSmartGeneration] = useState(true);
 
   const displayedShortName = program?.short_name
     ? `${program.short_name.split("-")[0]}-${suffix}`.trim()
@@ -82,12 +84,16 @@ const ProgramActions = ({ program }) => {
       return;
     }
     setGenerating(true);
+    setGenerationResult(null);
+    
     try {
       const selectedResponse = await fetch(`/api/meritlist?programId=${program.id}`);
       if (!selectedResponse.ok) throw new Error("Failed to fetch selected students");
       const selectedStudents = await selectedResponse.json();
       const selectedCnicSet = new Set(selectedStudents.map(student => student.cnic));
-      const meritList = stddata
+      
+      // Calculate merit for all students first
+      const allMeritList = stddata
         .filter(student => !selectedCnicSet.has(student.cnic))
         .map(student => {
           const merit = calculateMerit(student, weights, program.programType);
@@ -96,32 +102,81 @@ const ProgramActions = ({ program }) => {
             cnic: student.cnic,
             merit,
             form_no: student.form_no,
-            matchedPreference: student?.matchedReference // Use matchedReference here
+            matchedPreference: student?.matchedReference,
+            category: suffix === "O" ? "open_merit" : suffix === "R" ? "rational" : "self_finance",
           };
         });
-      const sortedMeritList = meritList
+      
+      // Sort by merit (highest first)
+      const sortedMeritList = allMeritList
         .sort((a, b) => b.merit - a.merit)
         .map((student, index) => ({
           ...student,
           rank: index + 1,
         }));
-      // Only take the number of seats specified by the user
-      const finalMeritList = sortedMeritList.slice(0, seats).map(student => ({
+
+      // Take enough students to fill the requested seats (including potential skips)
+      // We take 3x the requested seats to account for potential conflicts
+      const candidateStudents = sortedMeritList.slice(0, seats * 3);
+      
+      // Prepare the merit list for API call
+      const finalMeritList = candidateStudents.map(student => ({
         ...student,
         category: suffix === "O" ? "open_merit" : suffix === "R" ? "rational" : "self_finance",
       }));
-      const response = await fetch(`/api/meritlist`, {
+
+      // Use the fill-seats endpoint to ensure we get the requested number of seats
+      const endpoint = useSmartGeneration ? '/api/meritlist/fill-seats' : '/api/meritlist/fill-seats';
+      const requestBody = {
+        programId: program.id,
+        programName: program.name,
+        programShortName: displayedShortName,
+        meritList: finalMeritList,
+        targetSeats: seats, // The number of seats we want to fill
+        checkPreferences: useSmartGeneration
+      };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          programId: program.id,
-          programName: program.name,
-          programShortName: displayedShortName,
-          meritList: finalMeritList,
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
       if (!response.ok) throw new Error("Failed to store merit list in the database");
-      alert("Merit list and program details stored successfully!");
+      
+      const result = await response.json();
+      setGenerationResult(result);
+      
+      // Show success message with details
+      let message = `Merit list generated successfully!\n\n`;
+      message += `Target seats: ${result.targetSeats}\n`;
+      message += `Seats filled: ${result.seatsFilled}\n`;
+      message += `Total students processed: ${result.totalStudents}\n`;
+      message += `Students added: ${result.addedStudents}\n`;
+      
+      if (result.skippedStudents > 0) {
+        message += `Students skipped: ${result.skippedStudents}\n`;
+      }
+      
+      if (result.preferenceConflicts > 0) {
+        message += `Preference conflicts resolved: ${result.preferenceConflicts}\n`;
+      }
+      
+      if (result.removedFromOtherLists > 0) {
+        message += `Students removed from other lists: ${result.removedFromOtherLists}\n`;
+      }
+
+      // Check if we got the requested number of seats
+      if (result.seatsFilled < result.targetSeats) {
+        message += `\n⚠️ Note: Only ${result.seatsFilled} seats were filled out of ${result.targetSeats} requested.`;
+        message += `\nThis may be due to insufficient eligible students or preference conflicts.`;
+        message += `\nSeats remaining: ${result.seatsRemaining}`;
+      } else {
+        message += `\n✅ Successfully filled all ${result.targetSeats} requested seats!`;
+      }
+      
+      alert(message);
+      
     } catch (error) {
       console.error("Error generating merit list:", error);
       alert("Failed to generate merit list. Please try again.");
@@ -159,6 +214,18 @@ const ProgramActions = ({ program }) => {
           />
         </div>
         <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="smartGeneration"
+              checked={useSmartGeneration}
+              onChange={(e) => setUseSmartGeneration(e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="smartGeneration" className="text-sm">
+              Smart Generation (Check duplicates & preferences)
+            </label>
+          </div>
           <Button variant="default" onClick={generateMeritList} disabled={generating || !weights}>
             {generating ? "Generating..." : "Generate Merit List"}
           </Button>
@@ -167,6 +234,87 @@ const ProgramActions = ({ program }) => {
           </Button>
         </div>
       </div>
+
+      {/* Generation Results Display */}
+      {generationResult && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <h3 className="text-lg font-semibold mb-3">Generation Results</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Target Seats:</span>
+              <div className="text-lg font-bold text-blue-600">{generationResult.targetSeats}</div>
+            </div>
+            <div>
+              <span className="font-medium">Seats Filled:</span>
+              <div className="text-lg font-bold text-green-600">{generationResult.seatsFilled}</div>
+            </div>
+            <div>
+              <span className="font-medium">Total Processed:</span>
+              <div className="text-lg font-bold text-purple-600">{generationResult.totalStudents}</div>
+            </div>
+            <div>
+              <span className="font-medium">Skipped:</span>
+              <div className="text-lg font-bold text-orange-600">{generationResult.skippedStudents}</div>
+            </div>
+          </div>
+          
+          {/* Seat Status */}
+          {generationResult.seatsRemaining > 0 && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
+              <div className="flex items-center gap-2">
+                <span className="text-orange-600 font-medium">⚠️</span>
+                <span className="text-orange-700">
+                  {generationResult.seatsRemaining} seats remaining unfilled
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {generationResult.seatsFilled === generationResult.targetSeats && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 font-medium">✅</span>
+                <span className="text-green-700">
+                  All {generationResult.targetSeats} seats successfully filled!
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* Detailed Results */}
+          {generationResult.details && (
+            <div className="mt-4">
+              {generationResult.details.skippedStudents && generationResult.details.skippedStudents.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="font-medium text-orange-700 mb-2">Skipped Students:</h4>
+                  <div className="max-h-32 overflow-y-auto">
+                    {generationResult.details.skippedStudents.map((student, index) => (
+                      <div key={index} className="text-xs text-gray-600 mb-1">
+                        {student.name} ({student.cnic}) - {student.reason}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {generationResult.details.preferenceConflicts && generationResult.details.preferenceConflicts.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="font-medium text-purple-700 mb-2">Preference Conflicts Resolved:</h4>
+                  <div className="max-h-32 overflow-y-auto">
+                    {generationResult.details.preferenceConflicts.map((conflict, index) => (
+                      <div key={index} className="text-xs text-gray-600 mb-1">
+                        {conflict.name} ({conflict.cnic}) - Preference {conflict.currentPreference} 
+                        (was in: {conflict.existingPrograms.join(', ')})
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mt-8">
         {loading ? (
           <div>
