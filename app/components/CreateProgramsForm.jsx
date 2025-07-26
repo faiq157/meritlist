@@ -26,6 +26,10 @@ const CreateProgramsForm = ({
   );
   const [shortName, setShortName] = useState(initialValues.short_name || ""); // Added short_name
   const [message, setMessage] = useState("");
+  // Add seat fields
+  const [seatsOpen, setSeatsOpen] = useState(initialValues.seats_open || 0);
+  const [seatsSelfFinance, setSeatsSelfFinance] = useState(initialValues.seats_self_finance || 0);
+  const [seatsRational, setSeatsRational] = useState(initialValues.seats_rational || 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +38,9 @@ const CreateProgramsForm = ({
       description,
       programType,
       short_name: shortName, // Include short_name in submission
+      seats_open: Number(seatsOpen),
+      seats_self_finance: Number(seatsSelfFinance),
+      seats_rational: Number(seatsRational),
     });
 
     if (success) {
@@ -79,6 +86,41 @@ const CreateProgramsForm = ({
             placeholder="Enter description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Seat fields */}
+        <div>
+          <Label htmlFor="seatsOpen">Open Merit Seats</Label>
+          <Input
+            id="seatsOpen"
+            type="number"
+            min="0"
+            value={seatsOpen}
+            onChange={(e) => setSeatsOpen(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="seatsSelfFinance">Self Finance Seats</Label>
+          <Input
+            id="seatsSelfFinance"
+            type="number"
+            min="0"
+            value={seatsSelfFinance}
+            onChange={(e) => setSeatsSelfFinance(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="seatsRational">Rational Seats</Label>
+          <Input
+            id="seatsRational"
+            type="number"
+            min="0"
+            value={seatsRational}
+            onChange={(e) => setSeatsRational(e.target.value)}
             required
           />
         </div>

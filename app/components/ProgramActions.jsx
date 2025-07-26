@@ -7,6 +7,9 @@ import { columns } from "../programs/[id]/columns";
 import { calculateMerit } from "../utils/calculateMerit";
 import Loading from "./Loader";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 async function fetchWeights() {
   try {
@@ -29,6 +32,26 @@ const ProgramActions = ({ program }) => {
   const [seats, setSeats] = useState(0);
   const [generationResult, setGenerationResult] = useState(null);
   const [useSmartGeneration, setUseSmartGeneration] = useState(true);
+  const [uiError, setUiError] = useState("");
+  
+  // Seat management state
+  const [programSeats, setProgramSeats] = useState({
+    seats_open: 0,
+    seats_self_finance: 0,
+    seats_rational: 0,
+  });
+  const [updatingSeats, setUpdatingSeats] = useState(false);
+  const [seatUpdateSuccess, setSeatUpdateSuccess] = useState(false);
+
+  // Fetch program seats when program changes
+  useEffect(() => {
+    if (!program?.id) return;
+    setProgramSeats({
+      seats_open: program.seats_open ?? 0,
+      seats_self_finance: program.seats_self_finance ?? 0,
+      seats_rational: program.seats_rational ?? 0,
+    });
+  }, [program]);
 
   const displayedShortName = program?.short_name
     ? `${program.short_name.split("-")[0]}-${suffix}`.trim()
@@ -78,9 +101,30 @@ const ProgramActions = ({ program }) => {
   }, [displayedShortName, program?.id, suffix]);
 
   const generateMeritList = async () => {
+    setUiError("");
     if (!program?.id || !weights) return;
     if (!seats || seats <= 0) {
-      alert("Please enter a valid number of seats.");
+      setUiError("Please enter a valid number of seats.");
+      return;
+    }
+
+    // Check if requested seats exceed available seats for the selected category
+    const getAvailableSeats = () => {
+      switch (suffix) {
+        case 'O': return programSeats.seats_open;
+        case 'R': return programSeats.seats_rational;
+        case 'S': return programSeats.seats_self_finance;
+        default: return 0;
+      }
+    };
+
+    const availableSeats = getAvailableSeats();
+    if (availableSeats === 0) {
+      setUiError("😡 All seats are full for this category! No more students can be added.");
+      return;
+    }
+    if (seats > availableSeats) {
+      setUiError(`😡 Only ${availableSeats} seat${availableSeats === 1 ? '' : 's'} left. You can't fit more students than the seats available!`);
       return;
     }
     setGenerating(true);
@@ -189,8 +233,67 @@ const ProgramActions = ({ program }) => {
     router.push(`/showmeritlist?programId=${program.id}&programShortName=${displayedShortName}`);
   };
 
+  // Seat management functions
+  const handleSeatChange = (seatType, value) => {
+    setProgramSeats(prev => ({
+      ...prev,
+      [seatType]: parseInt(value) || 0
+    }));
+  };
+
+  const updateProgramSeats = async () => {
+    if (!program?.id) return;
+    setUpdatingSeats(true);
+    setSeatUpdateSuccess(false);
+    try {
+      const response = await fetch(`/api/programs/${program.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(programSeats),
+      });
+      if (response.ok) {
+        setSeatUpdateSuccess(true);
+        setTimeout(() => setSeatUpdateSuccess(false), 3000);
+      } else {
+        alert('Failed to update seat counts');
+      }
+    } catch (error) {
+      console.error('Error updating seats:', error);
+      alert('Failed to update seat counts');
+    } finally {
+      setUpdatingSeats(false);
+    }
+  };
+
+  const getSeatTypeLabel = (type) => {
+    switch (type) {
+      case 'seats_open': return 'Open Merit';
+      case 'seats_self_finance': return 'Self Finance';
+      case 'seats_rational': return 'Rational';
+      default: return type;
+    }
+  };
+
+  const getSeatTypeColor = (type) => {
+    switch (type) {
+      case 'seats_open': return 'bg-green-100 text-green-800';
+      case 'seats_self_finance': return 'bg-yellow-100 text-yellow-800';
+      case 'seats_rational': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="mx-auto p-14">
+      {/* UI Error Display */}
+      {uiError && (
+        <div className="mb-4 p-4 bg-red-100 border-2 border-red-400 rounded-lg flex items-center gap-3 text-red-800 text-xl font-bold shadow-lg animate-pulse">
+          <span role="img" aria-label="angry" style={{ fontSize: '2.5rem' }}>😡</span>
+          <span>{uiError}</span>
+        </div>
+      )}
+      {/* Department Seat Management Section */}
+     
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Select value={suffix} onValueChange={setSuffix}>
@@ -204,14 +307,19 @@ const ProgramActions = ({ program }) => {
             </SelectContent>
           </Select>
           <label>Select Number of Seats</label>
-          <input
-            type="number"
-            min={1}
-            className="ml-4 border rounded px-2 py-1 w-32"
-            placeholder="Enter seats"
-            value={seats}
-            onChange={e => setSeats(Number(e.target.value))}
-          />
+          <div className="flex items-center gap-2 ml-4">
+            <input
+              type="number"
+              min={1}
+              className="border rounded px-2 py-1 w-32"
+              placeholder="Enter seats"
+              value={seats}
+              onChange={e => setSeats(Number(e.target.value))}
+            />
+            <Badge className={getSeatTypeColor(suffix === 'O' ? 'seats_open' : suffix === 'R' ? 'seats_rational' : 'seats_self_finance')}>
+              Available: {suffix === 'O' ? programSeats.seats_open : suffix === 'R' ? programSeats.seats_rational : programSeats.seats_self_finance}
+            </Badge>
+          </div>
         </div>
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="flex items-center gap-2">
