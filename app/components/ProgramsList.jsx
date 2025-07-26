@@ -131,6 +131,7 @@ const deleteProgram = async (id) => {
           Student Status
         </Link>
 
+
       </div>
     </div>
 
@@ -148,9 +149,6 @@ const deleteProgram = async (id) => {
              <span><BookOpen/></span> {program.name}
            </h2>
            <div className="flex gap-2 mt-2">
-             <span className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full font-medium">
-               {program.short_name}
-             </span>
              <span className="bg-gray-200 text-gray-900 text-xs px-2 py-0.5 rounded-full font-medium">
                {program.programType}
              </span>
