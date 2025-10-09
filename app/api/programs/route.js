@@ -7,13 +7,7 @@ export async function GET(req) {
     const connection = await getConnection();
 
     const [rows] = await connection.execute("SELECT * FROM programs");
-    // Parse seat fields as integers for frontend consistency
-    const programs = rows.map(row => ({
-      ...row,
-      seats_open: row.seats_open !== undefined ? Number(row.seats_open) : 0,
-      seats_self_finance: row.seats_self_finance !== undefined ? Number(row.seats_self_finance) : 0,
-      seats_rational: row.seats_rational !== undefined ? Number(row.seats_rational) : 0,
-    }));
+    const programs = rows;
     console.log("Programs fetched successfully:", programs);
 
     return new Response(JSON.stringify(programs), {
@@ -33,7 +27,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, description, programType, short_name, seats_open = 0, seats_self_finance = 0, seats_rational = 0 } = body;
+    const { name, description, programType, short_name } = body;
 
     // Validate input
     if (!name || typeof name !== "string") {
@@ -50,13 +44,13 @@ export async function POST(req) {
       );
     }
 
-    console.log("Creating new program:", { name, description, programType, short_name, seats_open, seats_self_finance, seats_rational });
+    console.log("Creating new program:", { name, description, programType, short_name });
     const connection = await getConnection();
 
     const [result] = await connection.execute(
-      `INSERT INTO programs (name, description, programType, short_name, seats_open, seats_self_finance, seats_rational) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, description || null, programType || "General", short_name, seats_open, seats_self_finance, seats_rational]
+      `INSERT INTO programs (name, description, programType, short_name) 
+       VALUES (?, ?, ?, ?)`,
+      [name, description || null, programType || "General", short_name]
     );
 
     console.log("Program created successfully with ID:", result.insertId);
@@ -78,7 +72,7 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     const body = await req.json();
-    const { id, name, description, programType, short_name, seats_open, seats_self_finance, seats_rational } = body;
+    const { id, name, description, programType, short_name } = body;
 
     // Validate input
     if (!id || typeof id !== "number") {
@@ -102,7 +96,7 @@ export async function PUT(req) {
       );
     }
 
-    console.log("Updating program:", { id, name, description, programType, short_name, seats_open, seats_self_finance, seats_rational });
+    console.log("Updating program:", { id, name, description, programType, short_name });
     const connection = await getConnection();
 
     const [result] = await connection.execute(
@@ -110,12 +104,9 @@ export async function PUT(req) {
        SET name = ?, 
            description = ?, 
            programType = ?, 
-           short_name = ?,
-           seats_open = ?,
-           seats_self_finance = ?,
-           seats_rational = ?
+           short_name = ?
        WHERE id = ?`,
-      [name, description || null, programType || "General", short_name, seats_open ?? 0, seats_self_finance ?? 0, seats_rational ?? 0, id]
+      [name, description || null, programType || "General", short_name, id]
     );
 
     if (result.affectedRows === 0) {
